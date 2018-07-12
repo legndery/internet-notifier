@@ -1,0 +1,27 @@
+{
+  "name": "internet-notifier",
+  "version": "1.0.0",
+  "description": "It will Notify you if Internet is Down based on ping request to google.com/yahoo.com",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/legndery/internet-notifier.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/legndery/internet-notifier/issues"
+  },
+  "homepage": "https://github.com/legndery/internet-notifier#readme",
+  "dependencies": {
+    "node-notifier": "^5.2.1",
+    "ping": "^0.2.2"
+  },
+  "devDependencies": {
+    "webpack": "^4.16.0",
+    "webpack-cli": "^3.0.8"
+  }
+}
