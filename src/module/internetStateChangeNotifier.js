@@ -4,8 +4,18 @@ import notifier from "node-notifier";
 import { EventEmitter } from 'events'
 import {resolve} from 'path'
 import dns from 'dns';
+/**
+ * InternetStateChangeNotifier Class: which checks with ping or dns if a remote host is reachable or not
+ * and emits an event called 'internet_state_changed' with { alive: boolean }
+ */
 class InternetStateChangeNotifier {
-
+    /**
+     * Create the notifier class intstance with params
+     * 
+     * @param { {host, interval, debounce_time, check_method} } _config 
+     * @param { EventEmitter } emitter
+     * @param { function || boolean } handler
+     */
     constructor(_config, emitter, handler){
         this.pastData = {
             alive: undefined
@@ -13,15 +23,25 @@ class InternetStateChangeNotifier {
         this.config = _config || config;
         /** @type {EventEmitter} */
         this.emitter = emitter || new EventEmitter();
-        this.handler = handler || this.onInternetStateChanged;
+
+        if(handler === true || handler === undefined || handler === null){
+            this.handler = this.onInternetStateChanged;
+        }else if(handler === false || typeof handler === 'function'){
+            this.handler = handler;
+        }
         this.stateCache = {
             counter:0
         }
     }
+    /**
+     * run the notification service
+     */
     run(){
-        this.emitter.on('internet_state_changed', (data)=> {
-            this.handler(data);
-        });
+        if(typeof this.handler === 'function'){
+            this.emitter.on('internet_state_changed', (data)=> {
+                this.handler(data);
+            });
+        }
         setInterval(()=> {
             this.checkInternet(config.check_method, config.host)
             .then((result)=>{
@@ -34,6 +54,7 @@ class InternetStateChangeNotifier {
             });
         }, config.interval);
     }
+
     checkInternet(type, host){
         switch(type){
             case 'PING': return this.checkInternetWithPing(host);
@@ -72,9 +93,12 @@ class InternetStateChangeNotifier {
         return false;
     }
     emitInternetStateChanged(data){
-        this.emitter.emit('internet_state_changed', data);
+        this.emitter.emit('internet_state_changed', { alive: data.alive });
     }
-
+    /**
+     * The default handler provided. Which creates a toast notification
+     * @param {{alive}} data 
+     */
     onInternetStateChanged(data){
         const info = data.alive ? 'Internet Up. Time to work :\'(' : 'Internet Down lol! lul! lolz!';
         let icon = resolve(__dirname,'../../assets/img');

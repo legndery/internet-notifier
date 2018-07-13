@@ -2,6 +2,9 @@
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 /******/
+/******/ 	// object to store loaded and loading wasm modules
+/******/ 	var installedWasmModules = {};
+/******/
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
 /******/
@@ -36,32 +39,17 @@
 /******/ 	// define getter function for harmony exports
 /******/ 	__webpack_require__.d = function(exports, name, getter) {
 /******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
+/******/ 			Object.defineProperty(exports, name, {
+/******/ 				configurable: false,
+/******/ 				enumerable: true,
+/******/ 				get: getter
+/******/ 			});
 /******/ 		}
 /******/ 	};
 /******/
 /******/ 	// define __esModule on exports
 /******/ 	__webpack_require__.r = function(exports) {
-/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 		}
 /******/ 		Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 	};
-/******/
-/******/ 	// create a fake namespace object
-/******/ 	// mode & 1: value is a module id, require it
-/******/ 	// mode & 2: merge all properties of value into the ns
-/******/ 	// mode & 4: return value when already ns object
-/******/ 	// mode & 8|1: behave like require
-/******/ 	__webpack_require__.t = function(value, mode) {
-/******/ 		if(mode & 1) value = __webpack_require__(value);
-/******/ 		if(mode & 8) return value;
-/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
-/******/ 		var ns = Object.create(null);
-/******/ 		__webpack_require__.r(ns);
-/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
-/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
-/******/ 		return ns;
 /******/ 	};
 /******/
 /******/ 	// getDefaultExport function for compatibility with non-harmony modules
@@ -79,12 +67,48 @@
 /******/ 	// __webpack_public_path__
 /******/ 	__webpack_require__.p = "";
 /******/
+/******/ 	// object with all compiled WebAssembly.Modules
+/******/ 	__webpack_require__.w = {};
+/******/
 /******/
 /******/ 	// Load entry module and return exports
 /******/ 	return __webpack_require__(__webpack_require__.s = "./src/index.js");
 /******/ })
 /************************************************************************/
 /******/ ({
+
+/***/ "../../.nvm/versions/node/v9.8.0/lib/node_modules/webpack/buildin/module.js":
+/*!***********************************!*\
+  !*** (webpack)/buildin/module.js ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = function(module) {
+	if (!module.webpackPolyfill) {
+		module.deprecate = function() {};
+		module.paths = [];
+		// module.parent = undefined by default
+		if (!module.children) module.children = [];
+		Object.defineProperty(module, "loaded", {
+			enumerable: true,
+			get: function() {
+				return module.l;
+			}
+		});
+		Object.defineProperty(module, "id", {
+			enumerable: true,
+			get: function() {
+				return module.i;
+			}
+		});
+		module.webpackPolyfill = 1;
+	}
+	return module;
+};
+
+
+/***/ }),
 
 /***/ "./config/config.js":
 /*!**************************!*\
@@ -97,9 +121,9 @@
 __webpack_require__.r(__webpack_exports__);
 const config = {
     host: '8.8.8.8',//'yahoo.com',
-    interval: 1000,
-    debounce_time: 4,
-    check_method: "PING"
+    interval: 1000, // in ms
+    debounce_time: 4, // Number of same responses
+    check_method: "PING" // || "DNS"
 }
 /* harmony default export */ __webpack_exports__["default"] = (config);
 
@@ -8103,40 +8127,7 @@ function coerce(version) {
   }
 }());
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(module)))
-
-/***/ }),
-
-/***/ "./node_modules/webpack/buildin/module.js":
-/*!***********************************!*\
-  !*** (webpack)/buildin/module.js ***!
-  \***********************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-module.exports = function(module) {
-	if (!module.webpackPolyfill) {
-		module.deprecate = function() {};
-		module.paths = [];
-		// module.parent = undefined by default
-		if (!module.children) module.children = [];
-		Object.defineProperty(module, "loaded", {
-			enumerable: true,
-			get: function() {
-				return module.l;
-			}
-		});
-		Object.defineProperty(module, "id", {
-			enumerable: true,
-			get: function() {
-				return module.i;
-			}
-		});
-		module.webpackPolyfill = 1;
-	}
-	return module;
-};
-
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../../.nvm/versions/node/v9.8.0/lib/node_modules/webpack/buildin/module.js */ "../../.nvm/versions/node/v9.8.0/lib/node_modules/webpack/buildin/module.js")(module)))
 
 /***/ }),
 
@@ -8327,8 +8318,18 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+/**
+ * InternetStateChangeNotifier Class: which checks with ping or dns if a remote host is reachable or not
+ * and emits an event called 'internet_state_changed' with { alive: boolean }
+ */
 class InternetStateChangeNotifier {
-
+    /**
+     * Create the notifier class intstance with params
+     * 
+     * @param { {host, interval, debounce_time, check_method} } _config 
+     * @param { EventEmitter } emitter
+     * @param { function || boolean } handler
+     */
     constructor(_config, emitter, handler){
         this.pastData = {
             alive: undefined
@@ -8336,15 +8337,25 @@ class InternetStateChangeNotifier {
         this.config = _config || _config_config__WEBPACK_IMPORTED_MODULE_1__["default"];
         /** @type {EventEmitter} */
         this.emitter = emitter || new events__WEBPACK_IMPORTED_MODULE_3__["EventEmitter"]();
-        this.handler = handler || this.onInternetStateChanged;
+
+        if(handler === true || handler === undefined || handler === null){
+            this.handler = this.onInternetStateChanged;
+        }else if(handler === false || typeof handler === 'function'){
+            this.handler = handler;
+        }
         this.stateCache = {
             counter:0
         }
     }
+    /**
+     * run the notification service
+     */
     run(){
-        this.emitter.on('internet_state_changed', (data)=> {
-            this.handler(data);
-        });
+        if(typeof this.handler === 'function'){
+            this.emitter.on('internet_state_changed', (data)=> {
+                this.handler(data);
+            });
+        }
         setInterval(()=> {
             this.checkInternet(_config_config__WEBPACK_IMPORTED_MODULE_1__["default"].check_method, _config_config__WEBPACK_IMPORTED_MODULE_1__["default"].host)
             .then((result)=>{
@@ -8357,6 +8368,7 @@ class InternetStateChangeNotifier {
             });
         }, _config_config__WEBPACK_IMPORTED_MODULE_1__["default"].interval);
     }
+
     checkInternet(type, host){
         switch(type){
             case 'PING': return this.checkInternetWithPing(host);
@@ -8395,9 +8407,12 @@ class InternetStateChangeNotifier {
         return false;
     }
     emitInternetStateChanged(data){
-        this.emitter.emit('internet_state_changed', data);
+        this.emitter.emit('internet_state_changed', { alive: data.alive });
     }
-
+    /**
+     * The default handler provided. Which creates a toast notification
+     * @param {{alive}} data 
+     */
     onInternetStateChanged(data){
         const info = data.alive ? 'Internet Up. Time to work :\'(' : 'Internet Down lol! lul! lolz!';
         let icon = Object(path__WEBPACK_IMPORTED_MODULE_4__["resolve"])(__dirname,'../../assets/img');
