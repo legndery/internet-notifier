@@ -2,9 +2,6 @@
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 /******/
-/******/ 	// object to store loaded and loading wasm modules
-/******/ 	var installedWasmModules = {};
-/******/
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
 /******/
@@ -39,17 +36,32 @@
 /******/ 	// define getter function for harmony exports
 /******/ 	__webpack_require__.d = function(exports, name, getter) {
 /******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, {
-/******/ 				configurable: false,
-/******/ 				enumerable: true,
-/******/ 				get: getter
-/******/ 			});
+/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
 /******/ 		}
 /******/ 	};
 /******/
 /******/ 	// define __esModule on exports
 /******/ 	__webpack_require__.r = function(exports) {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 		}
 /******/ 		Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 	};
+/******/
+/******/ 	// create a fake namespace object
+/******/ 	// mode & 1: value is a module id, require it
+/******/ 	// mode & 2: merge all properties of value into the ns
+/******/ 	// mode & 4: return value when already ns object
+/******/ 	// mode & 8|1: behave like require
+/******/ 	__webpack_require__.t = function(value, mode) {
+/******/ 		if(mode & 1) value = __webpack_require__(value);
+/******/ 		if(mode & 8) return value;
+/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
+/******/ 		var ns = Object.create(null);
+/******/ 		__webpack_require__.r(ns);
+/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
+/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
+/******/ 		return ns;
 /******/ 	};
 /******/
 /******/ 	// getDefaultExport function for compatibility with non-harmony modules
@@ -67,26 +79,12 @@
 /******/ 	// __webpack_public_path__
 /******/ 	__webpack_require__.p = "";
 /******/
-/******/ 	// object with all compiled WebAssembly.Modules
-/******/ 	__webpack_require__.w = {};
-/******/
 /******/
 /******/ 	// Load entry module and return exports
 /******/ 	return __webpack_require__(__webpack_require__.s = "./src/index.js");
 /******/ })
 /************************************************************************/
 /******/ ({
-
-/***/ "../../.nvm/versions/node/v9.8.0/lib/node_modules/webpack/buildin/module.js":
-/*!***********************************!*\
-  !*** (webpack)/buildin/module.js ***!
-  \***********************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-eval("module.exports = function(module) {\n\tif (!module.webpackPolyfill) {\n\t\tmodule.deprecate = function() {};\n\t\tmodule.paths = [];\n\t\t// module.parent = undefined by default\n\t\tif (!module.children) module.children = [];\n\t\tObject.defineProperty(module, \"loaded\", {\n\t\t\tenumerable: true,\n\t\t\tget: function() {\n\t\t\t\treturn module.l;\n\t\t\t}\n\t\t});\n\t\tObject.defineProperty(module, \"id\", {\n\t\t\tenumerable: true,\n\t\t\tget: function() {\n\t\t\t\treturn module.i;\n\t\t\t}\n\t\t});\n\t\tmodule.webpackPolyfill = 1;\n\t}\n\treturn module;\n};\n\n\n//# sourceURL=webpack:///(webpack)/buildin/module.js?");
-
-/***/ }),
 
 /***/ "./config/config.js":
 /*!**************************!*\
@@ -96,7 +94,14 @@ eval("module.exports = function(module) {\n\tif (!module.webpackPolyfill) {\n\t\
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\nconst config = {\n    hosts: ['yahoo.com'],\n    interval: 2000\n}\n/* harmony default export */ __webpack_exports__[\"default\"] = (config);\n\n//# sourceURL=webpack:///./config/config.js?");
+__webpack_require__.r(__webpack_exports__);
+const config = {
+    host: '8.8.8.8',//'yahoo.com',
+    interval: 1000,
+    debounce_time: 4,
+    check_method: "PING"
+}
+/* harmony default export */ __webpack_exports__["default"] = (config);
 
 /***/ }),
 
@@ -107,7 +112,207 @@ eval("__webpack_require__.r(__webpack_exports__);\nconst config = {\n    hosts: 
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("var net = __webpack_require__(/*! net */ \"net\"),\n    crypto = __webpack_require__(/*! crypto */ \"crypto\"),\n    format = __webpack_require__(/*! util */ \"util\").format,\n    fs = __webpack_require__(/*! fs */ \"fs\");\n\nvar nl = '\\r\\n';\n\n/**\n * Create a new GNTP request of the given `type`.\n *\n * @param {String} type either NOTIFY or REGISTER\n * @api private\n */\n\nfunction GNTP(type, opts) {\n    opts = opts || {};\n    this.type = type;\n    this.host = opts.host || 'localhost';\n    this.port = opts.port || 23053;\n    this.request = 'GNTP/1.0 ' + type + ' NONE' + nl;\n    this.resources = [];\n    this.attempts = 0;\n    this.maxAttempts = 5;\n}\n\n/**\n * Build a response object from the given `resp` response string.\n *\n * The response object has a key/value pair for every header in the response, and \n * a `.state` property equal to either OK, ERROR, or CALLBACK.\n *\n * An example GNTP response:\n *\n *     GNTP/1.0 -OK NONE\\r\\n\n *     Response-Action: REGISTER\\r\\n\n *     \\r\\n\n *\n *  Which would parse to:\n *      \n *      { state: 'OK', 'Response-Action': 'REGISTER' }\n *\n * @param {String} resp\n * @return {Object}\n * @api private\n */\n\nGNTP.prototype.parseResp = function(resp) {\n    var parsed = {}, head, body;\n    resp = resp.slice(0, resp.indexOf(nl + nl)).split(nl);\n    head = resp[0];\n    body = resp.slice(1);\n\n    parsed.state = head.match(/-(OK|ERROR|CALLBACK)/)[0].slice(1);\n    body.forEach(function(ln) {\n        ln = ln.split(': ');\n        parsed[ln[0]] = ln[1];\n    });\n\n    return parsed;\n};\n\n/**\n * Call `GNTP.send()` with the given arguments after a certain delay.\n *\n * @api private\n */\n\nGNTP.prototype.retry = function() {\n    var self = this, \n        args = arguments;\n    setTimeout(function() {\n        self.send.apply(self, args);\n    }, 750);\n};\n\n\n/**\n * Add a resource to the GNTP request.\n *\n * @param {Buffer} file\n * @return {String}\n * @api private\n */\n\nGNTP.prototype.addResource = function(file) {\n    var id = crypto.createHash('md5').update(file).digest('hex'),\n        header = 'Identifier: ' + id + nl + 'Length: ' + file.length + nl + nl;\n    this.resources.push({ header: header, file: file });\n    return 'x-growl-resource://' + id;\n};\n\n/**\n * Append another header `name` with a value of `val` to the request. If `val` is\n * undefined, the header will be left out.\n *\n * @param {String} name\n * @param {String} val\n * @api public\n */\n\nGNTP.prototype.add = function(name, val) {\n    if (val === undefined) \n        return;\n\n    /* Handle icon files when they're image paths or Buffers. */\n    if (/-Icon/.test(name) && !/^https?:\\/\\//.test(val) ) {\n        if (/\\.(png|gif|jpe?g)$/.test(val))\n            val = this.addResource(fs.readFileSync(val));\n        else if (val instanceof Buffer)\n            val = this.addResource(val);\n    }\n\n    this.request += name + ': ' + val + nl;\n};\n\n/**\n * Append a newline to the request.\n *\n * @api public\n */\n\nGNTP.prototype.newline = function() {\n    this.request += nl;\n};\n\n/**\n * Send the GNTP request, calling `callback` after successfully sending the \n * request.\n *\n * An example GNTP request:\n *\n *     GNTP/1.0 REGISTER NONE\\r\\n\n *     Application-Name: Growly.js\\r\\n\n *     Notifications-Count: 1\\r\\n\n *     \\r\\n\n *     Notification-Name: default\\r\\n\n *     Notification-Display-Name: Default Notification\\r\\n\n *     Notification-Enabled: True\\r\\n\n *     \\r\\n\n * \n * @param {Function} callback which will be passed the parsed response\n * @api public\n */\n\nGNTP.prototype.send = function(callback) {\n    var self = this,\n        socket = net.connect(this.port, this.host),\n        resp = '';\n\n    callback = callback || function() {};\n\n    this.attempts += 1;\n\n    socket.on('connect', function() {\n        socket.write(self.request);\n\n        self.resources.forEach(function(res) {\n            socket.write(res.header);\n            socket.write(res.file);\n            socket.write(nl + nl);\n        });\n    });\n\n    socket.on('data', function(data) {\n        resp += data.toString();\n\n        /* Wait until we have a complete response which is signaled by two CRLF's. */\n        if (resp.slice(resp.length - 4) !== (nl + nl)) return; \n\n        resp = self.parseResp(resp); \n\n        /* We have to manually close the connection for certain responses; otherwise,\n           reset `resp` to prepare for the next response chunk.  */\n        if (resp.state === 'ERROR' || resp.state === 'CALLBACK')\n            socket.end();\n        else\n            resp = '';\n    });\n\n    socket.on('end', function() {\n        /* Retry on 200 (timed out), 401 (unknown app), or 402 (unknown notification). */\n        if (['200', '401', '402'].indexOf(resp['Error-Code']) >= 0) {\n            if (self.attempts <= self.maxAttempts) {\n                self.retry(callback);\n            } else {\n                var msg = 'GNTP request to \"%s:%d\" failed with error code %s (%s)';\n                callback(new Error(format(msg, self.host, self.port, resp['Error-Code'], resp['Error-Description'])));\n            }\n        } else {\n            callback(undefined, resp);\n        }\n    });\n\n    socket.on('error', function() {\n        callback(new Error(format('Error while sending GNTP request to \"%s:%d\"', self.host, self.port)));\n        socket.destroy();\n    });\n};\n\nmodule.exports = GNTP;\n\n\n//# sourceURL=webpack:///./node_modules/growly/lib/gntp.js?");
+var net = __webpack_require__(/*! net */ "net"),
+    crypto = __webpack_require__(/*! crypto */ "crypto"),
+    format = __webpack_require__(/*! util */ "util").format,
+    fs = __webpack_require__(/*! fs */ "fs");
+
+var nl = '\r\n';
+
+/**
+ * Create a new GNTP request of the given `type`.
+ *
+ * @param {String} type either NOTIFY or REGISTER
+ * @api private
+ */
+
+function GNTP(type, opts) {
+    opts = opts || {};
+    this.type = type;
+    this.host = opts.host || 'localhost';
+    this.port = opts.port || 23053;
+    this.request = 'GNTP/1.0 ' + type + ' NONE' + nl;
+    this.resources = [];
+    this.attempts = 0;
+    this.maxAttempts = 5;
+}
+
+/**
+ * Build a response object from the given `resp` response string.
+ *
+ * The response object has a key/value pair for every header in the response, and 
+ * a `.state` property equal to either OK, ERROR, or CALLBACK.
+ *
+ * An example GNTP response:
+ *
+ *     GNTP/1.0 -OK NONE\r\n
+ *     Response-Action: REGISTER\r\n
+ *     \r\n
+ *
+ *  Which would parse to:
+ *      
+ *      { state: 'OK', 'Response-Action': 'REGISTER' }
+ *
+ * @param {String} resp
+ * @return {Object}
+ * @api private
+ */
+
+GNTP.prototype.parseResp = function(resp) {
+    var parsed = {}, head, body;
+    resp = resp.slice(0, resp.indexOf(nl + nl)).split(nl);
+    head = resp[0];
+    body = resp.slice(1);
+
+    parsed.state = head.match(/-(OK|ERROR|CALLBACK)/)[0].slice(1);
+    body.forEach(function(ln) {
+        ln = ln.split(': ');
+        parsed[ln[0]] = ln[1];
+    });
+
+    return parsed;
+};
+
+/**
+ * Call `GNTP.send()` with the given arguments after a certain delay.
+ *
+ * @api private
+ */
+
+GNTP.prototype.retry = function() {
+    var self = this, 
+        args = arguments;
+    setTimeout(function() {
+        self.send.apply(self, args);
+    }, 750);
+};
+
+
+/**
+ * Add a resource to the GNTP request.
+ *
+ * @param {Buffer} file
+ * @return {String}
+ * @api private
+ */
+
+GNTP.prototype.addResource = function(file) {
+    var id = crypto.createHash('md5').update(file).digest('hex'),
+        header = 'Identifier: ' + id + nl + 'Length: ' + file.length + nl + nl;
+    this.resources.push({ header: header, file: file });
+    return 'x-growl-resource://' + id;
+};
+
+/**
+ * Append another header `name` with a value of `val` to the request. If `val` is
+ * undefined, the header will be left out.
+ *
+ * @param {String} name
+ * @param {String} val
+ * @api public
+ */
+
+GNTP.prototype.add = function(name, val) {
+    if (val === undefined) 
+        return;
+
+    /* Handle icon files when they're image paths or Buffers. */
+    if (/-Icon/.test(name) && !/^https?:\/\//.test(val) ) {
+        if (/\.(png|gif|jpe?g)$/.test(val))
+            val = this.addResource(fs.readFileSync(val));
+        else if (val instanceof Buffer)
+            val = this.addResource(val);
+    }
+
+    this.request += name + ': ' + val + nl;
+};
+
+/**
+ * Append a newline to the request.
+ *
+ * @api public
+ */
+
+GNTP.prototype.newline = function() {
+    this.request += nl;
+};
+
+/**
+ * Send the GNTP request, calling `callback` after successfully sending the 
+ * request.
+ *
+ * An example GNTP request:
+ *
+ *     GNTP/1.0 REGISTER NONE\r\n
+ *     Application-Name: Growly.js\r\n
+ *     Notifications-Count: 1\r\n
+ *     \r\n
+ *     Notification-Name: default\r\n
+ *     Notification-Display-Name: Default Notification\r\n
+ *     Notification-Enabled: True\r\n
+ *     \r\n
+ * 
+ * @param {Function} callback which will be passed the parsed response
+ * @api public
+ */
+
+GNTP.prototype.send = function(callback) {
+    var self = this,
+        socket = net.connect(this.port, this.host),
+        resp = '';
+
+    callback = callback || function() {};
+
+    this.attempts += 1;
+
+    socket.on('connect', function() {
+        socket.write(self.request);
+
+        self.resources.forEach(function(res) {
+            socket.write(res.header);
+            socket.write(res.file);
+            socket.write(nl + nl);
+        });
+    });
+
+    socket.on('data', function(data) {
+        resp += data.toString();
+
+        /* Wait until we have a complete response which is signaled by two CRLF's. */
+        if (resp.slice(resp.length - 4) !== (nl + nl)) return; 
+
+        resp = self.parseResp(resp); 
+
+        /* We have to manually close the connection for certain responses; otherwise,
+           reset `resp` to prepare for the next response chunk.  */
+        if (resp.state === 'ERROR' || resp.state === 'CALLBACK')
+            socket.end();
+        else
+            resp = '';
+    });
+
+    socket.on('end', function() {
+        /* Retry on 200 (timed out), 401 (unknown app), or 402 (unknown notification). */
+        if (['200', '401', '402'].indexOf(resp['Error-Code']) >= 0) {
+            if (self.attempts <= self.maxAttempts) {
+                self.retry(callback);
+            } else {
+                var msg = 'GNTP request to "%s:%d" failed with error code %s (%s)';
+                callback(new Error(format(msg, self.host, self.port, resp['Error-Code'], resp['Error-Description'])));
+            }
+        } else {
+            callback(undefined, resp);
+        }
+    });
+
+    socket.on('error', function() {
+        callback(new Error(format('Error while sending GNTP request to "%s:%d"', self.host, self.port)));
+        socket.destroy();
+    });
+};
+
+module.exports = GNTP;
+
 
 /***/ }),
 
@@ -118,7 +323,200 @@ eval("var net = __webpack_require__(/*! net */ \"net\"),\n    crypto = __webpack
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("var GNTP = __webpack_require__(/*! ./gntp.js */ \"./node_modules/growly/lib/gntp.js\");\n\n/**\n * Interface for registering Growl applications and sending Growl notifications.\n *\n * @api private\n */\n\nfunction Growly() {\n    this.appname = 'Growly';\n    this.notifications = undefined;\n    this.labels = undefined;\n    this.count = 0;\n    this.registered = false;\n    this.host = undefined;\n    this.port = undefined;\n}\n\n/**\n * Returns an array of label strings extracted from each notification object in\n * `Growly.notifications`.\n *\n * @param {Array} notifications\n * @return {Array} notification labels\n * @api private\n */\n\nGrowly.prototype.getLabels = function() {\n    return this.notifications.map(function(notif) {\n        return notif.label;\n    });\n};\n\n/**\n * Set the host to be used by GNTP requests.\n *\n * @param {String} host\n * @param {Number} port\n * @api public\n */\n\nGrowly.prototype.setHost = function(host, port) {\n    this.host = host;\n    this.port = port;\n};\n\n/**\n * Register an application with the name `appname` (required), icon `appicon`, and\n * a list of notification types `notifications`. If provided, `callback` will be\n * called when the request completes with the first argument being an `err` error\n * object if the request failed.\n *\n * Each object in the `notifications` array defines a type of notification the\n * application will have with the following properties:\n *\n *  - `.label` name used to identify the type of notification being used (required)\n *  - `.dispname` name users will see in Growl's preference panel (defaults to `.label`)\n *  - `.enabled` whether or not notifications of this type are enabled (defaults to true)\n *  - `.icon` default icon notifications of this type should use (url, file path, or Buffer object)\n *\n *  Example registration:\n *\n *      growl.register('My Application', 'path/to/icon.png', [\n *          { label: 'success', dispname: 'Success', icon: 'path/to/success.png' },\n *          { label: 'warning', dispname: 'Warning', icon: 'path/to/warning.png', enabled: false }\n *      ], function(err) { console.log(err || 'Registration successful!'); });\n *\n * @param {String} appname\n * @param {String|Buffer} appicon\n * @param {Array} notifications\n * @param {Function} callback\n * @api public\n */\n\nGrowly.prototype.register = function(appname, appicon, notifications, callback) {\n    var gntp;\n\n    if (typeof appicon === 'object') {\n        notifications = appicon;\n        appicon = undefined;\n    }\n\n    if (notifications === undefined || !notifications.length) {\n        notifications = [{ label: 'default', dispname: 'Default Notification', enabled: true }];\n    }\n\n    if (typeof arguments[arguments.length - 1] === 'function') {\n        callback = arguments[arguments.length - 1];\n    } else {\n        callback = function() {};\n    }\n\n    this.appname = appname;\n    this.notifications = notifications;\n    this.labels = this.getLabels();\n    this.registered = true;\n\n    gntp = new GNTP('REGISTER', { host: this.host, port: this.port });\n    gntp.add('Application-Name', appname);\n    gntp.add('Application-Icon', appicon);\n    gntp.add('Notifications-Count', notifications.length);\n    gntp.newline();\n\n    notifications.forEach(function(notif) {\n        if (notif.enabled === undefined) notif.enabled = true;\n        gntp.add('Notification-Name', notif.label);\n        gntp.add('Notification-Display-Name', notif.dispname);\n        gntp.add('Notification-Enabled', notif.enabled ? 'True' : 'False');\n        gntp.add('Notification-Icon', notif.icon);\n        gntp.newline();\n    });\n\n    gntp.send(callback);\n};\n\n/**\n * Send a notification with `text` content. Growly will lazily register itself\n * if the user hasn't already before sending the notification.\n *\n * A notification can have the following `opts` options:\n *\n *  - `.label` type of notification to use (defaults to the first registered type)\n *  - `.title` title of the notification\n *  - `.icon` url, file path, or Buffer instance for the notification's icon.\n *  - `.sticky` whether or not to sticky the notification (defaults to false)\n *  - `.priority` the priority of the notification from lowest (-2) to highest (2)\n *  - `.coalescingId` replace/update the matching previous notification. May be ignored.\n *\n * If provided, `callback` will be called when the user interacts with the notification.\n * The first argument will be an `err` error object, and the second argument an `action`\n * string equal to either 'clicked' or 'closed' (whichever action the user took.)\n *\n * Example notification:\n *\n *     growl.notify('Stuffs broken!', { label: 'warning' }, function(err, action) {\n *         console.log('Action:', action);\n *     });\n *\n * @param {String} text\n * @param {Object} opts\n * @param {Function} callback\n * @api public\n */\n\nGrowly.prototype.notify = function(text, opts, callback) {\n    var self = this,\n        gntp;\n\n    /* Lazy registration. */\n    if (!this.registered) {\n        this.register(this.appname, function(err) {\n            if (err) console.log(err);\n            self.notify.call(self, text, opts, callback);\n        });\n        return;\n    }\n\n    opts = opts || {};\n\n    if (typeof opts === 'function') {\n        callback = opts;\n        opts = {};\n    }\n\n    gntp = new GNTP('NOTIFY', { host: this.host, port: this.port });\n    gntp.add('Application-Name', this.appname);\n    gntp.add('Notification-Name', opts.label || this.labels[0]);\n    gntp.add('Notification-ID', ++this.count);\n    gntp.add('Notification-Title', opts.title);\n    gntp.add('Notification-Text', text);\n    gntp.add('Notification-Sticky', opts.sticky ? 'True' : 'False');\n    gntp.add('Notification-Priority', opts.priority);\n    gntp.add('Notification-Icon', opts.icon);\n    gntp.add('Notification-Coalescing-ID', opts.coalescingId || undefined);\n    gntp.add('Notification-Callback-Context', callback ? 'context' : undefined);\n    gntp.add('Notification-Callback-Context-Type', callback ? 'string' : undefined);\n    gntp.add('Notification-Callback-Target', undefined);\n    gntp.newline();\n\n    gntp.send(function(err, resp) {\n        if (callback && err) {\n            callback(err);\n        } else if (callback && resp.state === 'CALLBACK') {\n            callback(undefined, resp['Notification-Callback-Result'].toLowerCase());\n        }\n    });\n};\n\n/**\n * Expose an instance of the Growly object.\n */\n\nmodule.exports = new Growly();\n\n\n//# sourceURL=webpack:///./node_modules/growly/lib/growly.js?");
+var GNTP = __webpack_require__(/*! ./gntp.js */ "./node_modules/growly/lib/gntp.js");
+
+/**
+ * Interface for registering Growl applications and sending Growl notifications.
+ *
+ * @api private
+ */
+
+function Growly() {
+    this.appname = 'Growly';
+    this.notifications = undefined;
+    this.labels = undefined;
+    this.count = 0;
+    this.registered = false;
+    this.host = undefined;
+    this.port = undefined;
+}
+
+/**
+ * Returns an array of label strings extracted from each notification object in
+ * `Growly.notifications`.
+ *
+ * @param {Array} notifications
+ * @return {Array} notification labels
+ * @api private
+ */
+
+Growly.prototype.getLabels = function() {
+    return this.notifications.map(function(notif) {
+        return notif.label;
+    });
+};
+
+/**
+ * Set the host to be used by GNTP requests.
+ *
+ * @param {String} host
+ * @param {Number} port
+ * @api public
+ */
+
+Growly.prototype.setHost = function(host, port) {
+    this.host = host;
+    this.port = port;
+};
+
+/**
+ * Register an application with the name `appname` (required), icon `appicon`, and
+ * a list of notification types `notifications`. If provided, `callback` will be
+ * called when the request completes with the first argument being an `err` error
+ * object if the request failed.
+ *
+ * Each object in the `notifications` array defines a type of notification the
+ * application will have with the following properties:
+ *
+ *  - `.label` name used to identify the type of notification being used (required)
+ *  - `.dispname` name users will see in Growl's preference panel (defaults to `.label`)
+ *  - `.enabled` whether or not notifications of this type are enabled (defaults to true)
+ *  - `.icon` default icon notifications of this type should use (url, file path, or Buffer object)
+ *
+ *  Example registration:
+ *
+ *      growl.register('My Application', 'path/to/icon.png', [
+ *          { label: 'success', dispname: 'Success', icon: 'path/to/success.png' },
+ *          { label: 'warning', dispname: 'Warning', icon: 'path/to/warning.png', enabled: false }
+ *      ], function(err) { console.log(err || 'Registration successful!'); });
+ *
+ * @param {String} appname
+ * @param {String|Buffer} appicon
+ * @param {Array} notifications
+ * @param {Function} callback
+ * @api public
+ */
+
+Growly.prototype.register = function(appname, appicon, notifications, callback) {
+    var gntp;
+
+    if (typeof appicon === 'object') {
+        notifications = appicon;
+        appicon = undefined;
+    }
+
+    if (notifications === undefined || !notifications.length) {
+        notifications = [{ label: 'default', dispname: 'Default Notification', enabled: true }];
+    }
+
+    if (typeof arguments[arguments.length - 1] === 'function') {
+        callback = arguments[arguments.length - 1];
+    } else {
+        callback = function() {};
+    }
+
+    this.appname = appname;
+    this.notifications = notifications;
+    this.labels = this.getLabels();
+    this.registered = true;
+
+    gntp = new GNTP('REGISTER', { host: this.host, port: this.port });
+    gntp.add('Application-Name', appname);
+    gntp.add('Application-Icon', appicon);
+    gntp.add('Notifications-Count', notifications.length);
+    gntp.newline();
+
+    notifications.forEach(function(notif) {
+        if (notif.enabled === undefined) notif.enabled = true;
+        gntp.add('Notification-Name', notif.label);
+        gntp.add('Notification-Display-Name', notif.dispname);
+        gntp.add('Notification-Enabled', notif.enabled ? 'True' : 'False');
+        gntp.add('Notification-Icon', notif.icon);
+        gntp.newline();
+    });
+
+    gntp.send(callback);
+};
+
+/**
+ * Send a notification with `text` content. Growly will lazily register itself
+ * if the user hasn't already before sending the notification.
+ *
+ * A notification can have the following `opts` options:
+ *
+ *  - `.label` type of notification to use (defaults to the first registered type)
+ *  - `.title` title of the notification
+ *  - `.icon` url, file path, or Buffer instance for the notification's icon.
+ *  - `.sticky` whether or not to sticky the notification (defaults to false)
+ *  - `.priority` the priority of the notification from lowest (-2) to highest (2)
+ *  - `.coalescingId` replace/update the matching previous notification. May be ignored.
+ *
+ * If provided, `callback` will be called when the user interacts with the notification.
+ * The first argument will be an `err` error object, and the second argument an `action`
+ * string equal to either 'clicked' or 'closed' (whichever action the user took.)
+ *
+ * Example notification:
+ *
+ *     growl.notify('Stuffs broken!', { label: 'warning' }, function(err, action) {
+ *         console.log('Action:', action);
+ *     });
+ *
+ * @param {String} text
+ * @param {Object} opts
+ * @param {Function} callback
+ * @api public
+ */
+
+Growly.prototype.notify = function(text, opts, callback) {
+    var self = this,
+        gntp;
+
+    /* Lazy registration. */
+    if (!this.registered) {
+        this.register(this.appname, function(err) {
+            if (err) console.log(err);
+            self.notify.call(self, text, opts, callback);
+        });
+        return;
+    }
+
+    opts = opts || {};
+
+    if (typeof opts === 'function') {
+        callback = opts;
+        opts = {};
+    }
+
+    gntp = new GNTP('NOTIFY', { host: this.host, port: this.port });
+    gntp.add('Application-Name', this.appname);
+    gntp.add('Notification-Name', opts.label || this.labels[0]);
+    gntp.add('Notification-ID', ++this.count);
+    gntp.add('Notification-Title', opts.title);
+    gntp.add('Notification-Text', text);
+    gntp.add('Notification-Sticky', opts.sticky ? 'True' : 'False');
+    gntp.add('Notification-Priority', opts.priority);
+    gntp.add('Notification-Icon', opts.icon);
+    gntp.add('Notification-Coalescing-ID', opts.coalescingId || undefined);
+    gntp.add('Notification-Callback-Context', callback ? 'context' : undefined);
+    gntp.add('Notification-Callback-Context-Type', callback ? 'string' : undefined);
+    gntp.add('Notification-Callback-Target', undefined);
+    gntp.newline();
+
+    gntp.send(function(err, resp) {
+        if (callback && err) {
+            callback(err);
+        } else if (callback && resp.state === 'CALLBACK') {
+            callback(undefined, resp['Notification-Callback-Result'].toLowerCase());
+        }
+    });
+};
+
+/**
+ * Expose an instance of the Growly object.
+ */
+
+module.exports = new Growly();
+
 
 /***/ }),
 
@@ -129,7 +527,64 @@ eval("var GNTP = __webpack_require__(/*! ./gntp.js */ \"./node_modules/growly/li
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("var fs = __webpack_require__(/*! fs */ \"fs\")\nvar core\nif (process.platform === 'win32' || global.TESTING_WINDOWS) {\n  core = __webpack_require__(/*! ./windows.js */ \"./node_modules/isexe/windows.js\")\n} else {\n  core = __webpack_require__(/*! ./mode.js */ \"./node_modules/isexe/mode.js\")\n}\n\nmodule.exports = isexe\nisexe.sync = sync\n\nfunction isexe (path, options, cb) {\n  if (typeof options === 'function') {\n    cb = options\n    options = {}\n  }\n\n  if (!cb) {\n    if (typeof Promise !== 'function') {\n      throw new TypeError('callback not provided')\n    }\n\n    return new Promise(function (resolve, reject) {\n      isexe(path, options || {}, function (er, is) {\n        if (er) {\n          reject(er)\n        } else {\n          resolve(is)\n        }\n      })\n    })\n  }\n\n  core(path, options || {}, function (er, is) {\n    // ignore EACCES because that just means we aren't allowed to run it\n    if (er) {\n      if (er.code === 'EACCES' || options && options.ignoreErrors) {\n        er = null\n        is = false\n      }\n    }\n    cb(er, is)\n  })\n}\n\nfunction sync (path, options) {\n  // my kingdom for a filtered catch\n  try {\n    return core.sync(path, options || {})\n  } catch (er) {\n    if (options && options.ignoreErrors || er.code === 'EACCES') {\n      return false\n    } else {\n      throw er\n    }\n  }\n}\n\n\n//# sourceURL=webpack:///./node_modules/isexe/index.js?");
+var fs = __webpack_require__(/*! fs */ "fs")
+var core
+if (process.platform === 'win32' || global.TESTING_WINDOWS) {
+  core = __webpack_require__(/*! ./windows.js */ "./node_modules/isexe/windows.js")
+} else {
+  core = __webpack_require__(/*! ./mode.js */ "./node_modules/isexe/mode.js")
+}
+
+module.exports = isexe
+isexe.sync = sync
+
+function isexe (path, options, cb) {
+  if (typeof options === 'function') {
+    cb = options
+    options = {}
+  }
+
+  if (!cb) {
+    if (typeof Promise !== 'function') {
+      throw new TypeError('callback not provided')
+    }
+
+    return new Promise(function (resolve, reject) {
+      isexe(path, options || {}, function (er, is) {
+        if (er) {
+          reject(er)
+        } else {
+          resolve(is)
+        }
+      })
+    })
+  }
+
+  core(path, options || {}, function (er, is) {
+    // ignore EACCES because that just means we aren't allowed to run it
+    if (er) {
+      if (er.code === 'EACCES' || options && options.ignoreErrors) {
+        er = null
+        is = false
+      }
+    }
+    cb(er, is)
+  })
+}
+
+function sync (path, options) {
+  // my kingdom for a filtered catch
+  try {
+    return core.sync(path, options || {})
+  } catch (er) {
+    if (options && options.ignoreErrors || er.code === 'EACCES') {
+      return false
+    } else {
+      throw er
+    }
+  }
+}
+
 
 /***/ }),
 
@@ -140,7 +595,48 @@ eval("var fs = __webpack_require__(/*! fs */ \"fs\")\nvar core\nif (process.plat
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("module.exports = isexe\nisexe.sync = sync\n\nvar fs = __webpack_require__(/*! fs */ \"fs\")\n\nfunction isexe (path, options, cb) {\n  fs.stat(path, function (er, stat) {\n    cb(er, er ? false : checkStat(stat, options))\n  })\n}\n\nfunction sync (path, options) {\n  return checkStat(fs.statSync(path), options)\n}\n\nfunction checkStat (stat, options) {\n  return stat.isFile() && checkMode(stat, options)\n}\n\nfunction checkMode (stat, options) {\n  var mod = stat.mode\n  var uid = stat.uid\n  var gid = stat.gid\n\n  var myUid = options.uid !== undefined ?\n    options.uid : process.getuid && process.getuid()\n  var myGid = options.gid !== undefined ?\n    options.gid : process.getgid && process.getgid()\n\n  var u = parseInt('100', 8)\n  var g = parseInt('010', 8)\n  var o = parseInt('001', 8)\n  var ug = u | g\n\n  var ret = (mod & o) ||\n    (mod & g) && gid === myGid ||\n    (mod & u) && uid === myUid ||\n    (mod & ug) && myUid === 0\n\n  return ret\n}\n\n\n//# sourceURL=webpack:///./node_modules/isexe/mode.js?");
+module.exports = isexe
+isexe.sync = sync
+
+var fs = __webpack_require__(/*! fs */ "fs")
+
+function isexe (path, options, cb) {
+  fs.stat(path, function (er, stat) {
+    cb(er, er ? false : checkStat(stat, options))
+  })
+}
+
+function sync (path, options) {
+  return checkStat(fs.statSync(path), options)
+}
+
+function checkStat (stat, options) {
+  return stat.isFile() && checkMode(stat, options)
+}
+
+function checkMode (stat, options) {
+  var mod = stat.mode
+  var uid = stat.uid
+  var gid = stat.gid
+
+  var myUid = options.uid !== undefined ?
+    options.uid : process.getuid && process.getuid()
+  var myGid = options.gid !== undefined ?
+    options.gid : process.getgid && process.getgid()
+
+  var u = parseInt('100', 8)
+  var g = parseInt('010', 8)
+  var o = parseInt('001', 8)
+  var ug = u | g
+
+  var ret = (mod & o) ||
+    (mod & g) && gid === myGid ||
+    (mod & u) && uid === myUid ||
+    (mod & ug) && myUid === 0
+
+  return ret
+}
+
 
 /***/ }),
 
@@ -151,7 +647,49 @@ eval("module.exports = isexe\nisexe.sync = sync\n\nvar fs = __webpack_require__(
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("module.exports = isexe\nisexe.sync = sync\n\nvar fs = __webpack_require__(/*! fs */ \"fs\")\n\nfunction checkPathExt (path, options) {\n  var pathext = options.pathExt !== undefined ?\n    options.pathExt : process.env.PATHEXT\n\n  if (!pathext) {\n    return true\n  }\n\n  pathext = pathext.split(';')\n  if (pathext.indexOf('') !== -1) {\n    return true\n  }\n  for (var i = 0; i < pathext.length; i++) {\n    var p = pathext[i].toLowerCase()\n    if (p && path.substr(-p.length).toLowerCase() === p) {\n      return true\n    }\n  }\n  return false\n}\n\nfunction checkStat (stat, path, options) {\n  if (!stat.isSymbolicLink() && !stat.isFile()) {\n    return false\n  }\n  return checkPathExt(path, options)\n}\n\nfunction isexe (path, options, cb) {\n  fs.stat(path, function (er, stat) {\n    cb(er, er ? false : checkStat(stat, path, options))\n  })\n}\n\nfunction sync (path, options) {\n  return checkStat(fs.statSync(path), path, options)\n}\n\n\n//# sourceURL=webpack:///./node_modules/isexe/windows.js?");
+module.exports = isexe
+isexe.sync = sync
+
+var fs = __webpack_require__(/*! fs */ "fs")
+
+function checkPathExt (path, options) {
+  var pathext = options.pathExt !== undefined ?
+    options.pathExt : process.env.PATHEXT
+
+  if (!pathext) {
+    return true
+  }
+
+  pathext = pathext.split(';')
+  if (pathext.indexOf('') !== -1) {
+    return true
+  }
+  for (var i = 0; i < pathext.length; i++) {
+    var p = pathext[i].toLowerCase()
+    if (p && path.substr(-p.length).toLowerCase() === p) {
+      return true
+    }
+  }
+  return false
+}
+
+function checkStat (stat, path, options) {
+  if (!stat.isSymbolicLink() && !stat.isFile()) {
+    return false
+  }
+  return checkPathExt(path, options)
+}
+
+function isexe (path, options, cb) {
+  fs.stat(path, function (er, stat) {
+    cb(er, er ? false : checkStat(stat, path, options))
+  })
+}
+
+function sync (path, options) {
+  return checkStat(fs.statSync(path), path, options)
+}
+
 
 /***/ }),
 
@@ -162,7 +700,53 @@ eval("module.exports = isexe\nisexe.sync = sync\n\nvar fs = __webpack_require__(
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("var os = __webpack_require__(/*! os */ \"os\");\nvar utils = __webpack_require__(/*! ./lib/utils */ \"./node_modules/node-notifier/lib/utils.js\");\n\n// All notifiers\nvar NotifySend = __webpack_require__(/*! ./notifiers/notifysend */ \"./node_modules/node-notifier/notifiers/notifysend.js\");\nvar NotificationCenter = __webpack_require__(/*! ./notifiers/notificationcenter */ \"./node_modules/node-notifier/notifiers/notificationcenter.js\");\nvar WindowsToaster = __webpack_require__(/*! ./notifiers/toaster */ \"./node_modules/node-notifier/notifiers/toaster.js\");\nvar Growl = __webpack_require__(/*! ./notifiers/growl */ \"./node_modules/node-notifier/notifiers/growl.js\");\nvar WindowsBalloon = __webpack_require__(/*! ./notifiers/balloon */ \"./node_modules/node-notifier/notifiers/balloon.js\");\n\nvar options = { withFallback: true };\n\nswitch (os.type()) {\n  case 'Linux':\n    module.exports = new NotifySend(options);\n    module.exports.Notification = NotifySend;\n    break;\n  case 'Darwin':\n    module.exports = new NotificationCenter(options);\n    module.exports.Notification = NotificationCenter;\n    break;\n  case 'Windows_NT':\n    if (utils.isLessThanWin8()) {\n      module.exports = new WindowsBalloon(options);\n      module.exports.Notification = WindowsBalloon;\n    } else {\n      module.exports = new WindowsToaster(options);\n      module.exports.Notification = WindowsToaster;\n    }\n    break;\n  default:\n    if (os.type().match(/BSD$/)) {\n      module.exports = new NotifySend(options);\n      module.exports.Notification = NotifySend;\n    } else {\n      module.exports = new Growl(options);\n      module.exports.Notification = Growl;\n    }\n}\n\n// Expose notifiers to give full control.\nmodule.exports.NotifySend = NotifySend;\nmodule.exports.NotificationCenter = NotificationCenter;\nmodule.exports.WindowsToaster = WindowsToaster;\nmodule.exports.WindowsBalloon = WindowsBalloon;\nmodule.exports.Growl = Growl;\n\n\n//# sourceURL=webpack:///./node_modules/node-notifier/index.js?");
+var os = __webpack_require__(/*! os */ "os");
+var utils = __webpack_require__(/*! ./lib/utils */ "./node_modules/node-notifier/lib/utils.js");
+
+// All notifiers
+var NotifySend = __webpack_require__(/*! ./notifiers/notifysend */ "./node_modules/node-notifier/notifiers/notifysend.js");
+var NotificationCenter = __webpack_require__(/*! ./notifiers/notificationcenter */ "./node_modules/node-notifier/notifiers/notificationcenter.js");
+var WindowsToaster = __webpack_require__(/*! ./notifiers/toaster */ "./node_modules/node-notifier/notifiers/toaster.js");
+var Growl = __webpack_require__(/*! ./notifiers/growl */ "./node_modules/node-notifier/notifiers/growl.js");
+var WindowsBalloon = __webpack_require__(/*! ./notifiers/balloon */ "./node_modules/node-notifier/notifiers/balloon.js");
+
+var options = { withFallback: true };
+
+switch (os.type()) {
+  case 'Linux':
+    module.exports = new NotifySend(options);
+    module.exports.Notification = NotifySend;
+    break;
+  case 'Darwin':
+    module.exports = new NotificationCenter(options);
+    module.exports.Notification = NotificationCenter;
+    break;
+  case 'Windows_NT':
+    if (utils.isLessThanWin8()) {
+      module.exports = new WindowsBalloon(options);
+      module.exports.Notification = WindowsBalloon;
+    } else {
+      module.exports = new WindowsToaster(options);
+      module.exports.Notification = WindowsToaster;
+    }
+    break;
+  default:
+    if (os.type().match(/BSD$/)) {
+      module.exports = new NotifySend(options);
+      module.exports.Notification = NotifySend;
+    } else {
+      module.exports = new Growl(options);
+      module.exports.Notification = Growl;
+    }
+}
+
+// Expose notifiers to give full control.
+module.exports.NotifySend = NotifySend;
+module.exports.NotificationCenter = NotificationCenter;
+module.exports.WindowsToaster = WindowsToaster;
+module.exports.WindowsBalloon = WindowsBalloon;
+module.exports.Growl = Growl;
+
 
 /***/ }),
 
@@ -173,7 +757,31 @@ eval("var os = __webpack_require__(/*! os */ \"os\");\nvar utils = __webpack_req
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("var net = __webpack_require__(/*! net */ \"net\");\n\nvar hasGrowl = false;\nmodule.exports = function(growlConfig, cb) {\n  if (typeof cb === 'undefined') {\n    cb = growlConfig;\n    growlConfig = {};\n  }\n  if (hasGrowl) return cb(null, hasGrowl);\n  var port = growlConfig.port || 23053;\n  var host = growlConfig.host || 'localhost';\n  var socket = net.connect(port, host);\n  socket.setTimeout(100);\n\n  socket.on('connect', function() {\n    socket.end();\n    cb(null, true);\n  });\n\n  socket.on('error', function() {\n    socket.end();\n    cb(null, false);\n  });\n};\n\n\n//# sourceURL=webpack:///./node_modules/node-notifier/lib/checkGrowl.js?");
+var net = __webpack_require__(/*! net */ "net");
+
+var hasGrowl = false;
+module.exports = function(growlConfig, cb) {
+  if (typeof cb === 'undefined') {
+    cb = growlConfig;
+    growlConfig = {};
+  }
+  if (hasGrowl) return cb(null, hasGrowl);
+  var port = growlConfig.port || 23053;
+  var host = growlConfig.host || 'localhost';
+  var socket = net.connect(port, host);
+  socket.setTimeout(100);
+
+  socket.on('connect', function() {
+    socket.end();
+    cb(null, true);
+  });
+
+  socket.on('error', function() {
+    socket.end();
+    cb(null, false);
+  });
+};
+
 
 /***/ }),
 
@@ -184,7 +792,517 @@ eval("var net = __webpack_require__(/*! net */ \"net\");\n\nvar hasGrowl = false
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("var shellwords = __webpack_require__(/*! shellwords */ \"./node_modules/shellwords/lib/shellwords.js\");\nvar cp = __webpack_require__(/*! child_process */ \"child_process\");\nvar semver = __webpack_require__(/*! semver */ \"./node_modules/semver/semver.js\");\nvar path = __webpack_require__(/*! path */ \"path\");\nvar url = __webpack_require__(/*! url */ \"url\");\nvar os = __webpack_require__(/*! os */ \"os\");\nvar fs = __webpack_require__(/*! fs */ \"fs\");\n\nfunction clone(obj) {\n  return JSON.parse(JSON.stringify(obj));\n}\n\nmodule.exports.clone = clone;\n\nvar escapeQuotes = function(str) {\n  if (typeof str === 'string') {\n    return str.replace(/([\"$`\\\\])/g, '\\\\$1');\n  } else {\n    return str;\n  }\n};\n\nvar inArray = function(arr, val) {\n  return arr.indexOf(val) !== -1;\n};\n\nvar notifySendFlags = {\n  u: 'urgency',\n  urgency: 'urgency',\n  t: 'expire-time',\n  time: 'expire-time',\n  e: 'expire-time',\n  expire: 'expire-time',\n  'expire-time': 'expire-time',\n  i: 'icon',\n  icon: 'icon',\n  c: 'category',\n  category: 'category',\n  subtitle: 'category',\n  h: 'hint',\n  hint: 'hint'\n};\n\nmodule.exports.command = function(notifier, options, cb) {\n  notifier = shellwords.escape(notifier);\n  if (process.env.DEBUG && process.env.DEBUG.indexOf('notifier') !== -1) {\n    console.info('node-notifier debug info (command):');\n    console.info('[notifier path]', notifier);\n    console.info('[notifier options]', options.join(' '));\n  }\n\n  return cp.exec(notifier + ' ' + options.join(' '), function(\n    error,\n    stdout,\n    stderr\n  ) {\n    if (error) return cb(error);\n    cb(stderr, stdout);\n  });\n};\n\nmodule.exports.fileCommand = function(notifier, options, cb) {\n  if (process.env.DEBUG && process.env.DEBUG.indexOf('notifier') !== -1) {\n    console.info('node-notifier debug info (fileCommand):');\n    console.info('[notifier path]', notifier);\n    console.info('[notifier options]', options.join(' '));\n  }\n\n  return cp.execFile(notifier, options, function(error, stdout, stderr) {\n    if (error) return cb(error, stdout);\n    cb(stderr, stdout);\n  });\n};\n\nmodule.exports.fileCommandJson = function(notifier, options, cb) {\n  if (process.env.DEBUG && process.env.DEBUG.indexOf('notifier') !== -1) {\n    console.info('node-notifier debug info (fileCommandJson):');\n    console.info('[notifier path]', notifier);\n    console.info('[notifier options]', options.join(' '));\n  }\n  return cp.execFile(notifier, options, function(error, stdout, stderr) {\n    if (error) return cb(error, stdout);\n    if (!stdout) return cb(error, {});\n\n    try {\n      var data = JSON.parse(stdout);\n      cb(stderr, data);\n    } catch (e) {\n      cb(e, stdout);\n    }\n  });\n};\n\nmodule.exports.immediateFileCommand = function(notifier, options, cb) {\n  if (process.env.DEBUG && process.env.DEBUG.indexOf('notifier') !== -1) {\n    console.info('node-notifier debug info (notifier):');\n    console.info('[notifier path]', notifier);\n  }\n\n  notifierExists(notifier, function(_, exists) {\n    if (!exists) {\n      return cb(new Error('Notifier (' + notifier + ') not found on system.'));\n    }\n    cp.execFile(notifier, options);\n    cb();\n  });\n};\n\nfunction notifierExists(notifier, cb) {\n  return fs.stat(notifier, function(err, stat) {\n    if (!err) return cb(err, stat.isFile());\n\n    // Check if Windows alias\n    if (path.extname(notifier)) {\n      // Has extentioon, no need to check more\n      return cb(err, false);\n    }\n\n    // Check if there is an exe file in the directory\n    return fs.stat(notifier + '.exe', function(err, stat) {\n      if (err) return cb(err, false);\n      cb(err, stat.isFile());\n    });\n  });\n}\n\nvar mapAppIcon = function(options) {\n  if (options.appIcon) {\n    options.icon = options.appIcon;\n    delete options.appIcon;\n  }\n\n  return options;\n};\n\nvar mapText = function(options) {\n  if (options.text) {\n    options.message = options.text;\n    delete options.text;\n  }\n\n  return options;\n};\n\nvar mapIconShorthand = function(options) {\n  if (options.i) {\n    options.icon = options.i;\n    delete options.i;\n  }\n\n  return options;\n};\n\nmodule.exports.mapToNotifySend = function(options) {\n  options = mapAppIcon(options);\n  options = mapText(options);\n\n  for (var key in options) {\n    if (key === 'message' || key === 'title') continue;\n    if (options.hasOwnProperty(key) && notifySendFlags[key] !== key) {\n      options[notifySendFlags[key]] = options[key];\n      delete options[key];\n    }\n  }\n\n  return options;\n};\n\nmodule.exports.mapToGrowl = function(options) {\n  options = mapAppIcon(options);\n  options = mapIconShorthand(options);\n  options = mapText(options);\n\n  if (options.icon && !Buffer.isBuffer(options.icon)) {\n    try {\n      options.icon = fs.readFileSync(options.icon);\n    } catch (ex) {}\n  }\n\n  return options;\n};\n\nmodule.exports.mapToMac = function(options) {\n  options = mapIconShorthand(options);\n  options = mapText(options);\n\n  if (options.icon) {\n    options.appIcon = options.icon;\n    delete options.icon;\n  }\n\n  if (options.sound === true) {\n    options.sound = 'Bottle';\n  }\n\n  if (options.sound === false) {\n    delete options.sound;\n  }\n\n  if (options.sound && options.sound.indexOf('Notification.') === 0) {\n    options.sound = 'Bottle';\n  }\n\n  if (options.wait === true) {\n    if (!options.timeout) {\n      options.timeout = 5;\n    }\n    delete options.wait;\n  }\n\n  options.json = true;\n  return options;\n};\n\nfunction isArray(arr) {\n  return Object.prototype.toString.call(arr) === '[object Array]';\n}\n\nfunction noop() {}\nmodule.exports.actionJackerDecorator = function(emitter, options, fn, mapper) {\n  options = clone(options);\n  fn = fn || noop;\n\n  if (typeof fn !== 'function') {\n    throw new TypeError(\n      'The second argument must be a function callback. You have passed ' +\n        typeof fn\n    );\n  }\n\n  return function(err, data) {\n    var resultantData = data;\n    var metadata = {};\n    // Allow for extra data if resultantData is an object\n    if (resultantData && typeof resultantData === 'object') {\n      metadata = resultantData;\n      resultantData = resultantData.activationType;\n    }\n\n    // Sanitize the data\n    if (resultantData) {\n      resultantData = resultantData.toLowerCase().trim();\n      if (resultantData.match(/^activate|clicked$/)) {\n        resultantData = 'activate';\n      }\n    }\n\n    fn.apply(emitter, [err, resultantData, metadata]);\n    if (!mapper || !resultantData) return;\n\n    var key = mapper(resultantData);\n    if (!key) return;\n    emitter.emit(key, emitter, options, metadata);\n  };\n};\n\nmodule.exports.constructArgumentList = function(options, extra) {\n  var args = [];\n  extra = extra || {};\n\n  // Massive ugly setup. Default args\n  var initial = extra.initial || [];\n  var keyExtra = extra.keyExtra || '';\n  var allowedArguments = extra.allowedArguments || [];\n  var noEscape = extra.noEscape !== void 0;\n  var checkForAllowed = extra.allowedArguments !== void 0;\n  var explicitTrue = !!extra.explicitTrue;\n  var keepNewlines = !!extra.keepNewlines;\n  var wrapper = extra.wrapper === void 0 ? '\"' : extra.wrapper;\n\n  var escapeFn = function(arg) {\n    if (isArray(arg)) {\n      return removeNewLines(arg.join(','));\n    }\n\n    if (!noEscape) {\n      arg = escapeQuotes(arg);\n    }\n    if (typeof arg === 'string' && !keepNewlines) {\n      arg = removeNewLines(arg);\n    }\n    return wrapper + arg + wrapper;\n  };\n\n  initial.forEach(function(val) {\n    args.push(escapeFn(val));\n  });\n  for (var key in options) {\n    if (\n      options.hasOwnProperty(key) &&\n      (!checkForAllowed || inArray(allowedArguments, key))\n    ) {\n      if (explicitTrue && options[key] === true) {\n        args.push('-' + keyExtra + key);\n      } else if (explicitTrue && options[key] === false) continue;\n      else args.push('-' + keyExtra + key, escapeFn(options[key]));\n    }\n  }\n  return args;\n};\n\nfunction removeNewLines(str) {\n  var excapedNewline = process.platform === 'win32' ? '\\\\r\\\\n' : '\\\\n';\n  return str.replace(/\\r?\\n/g, excapedNewline);\n}\n\n/*\n---- Options ----\n[-t] <title string>     | Displayed on the first line of the toast.\n[-m] <message string>   | Displayed on the remaining lines, wrapped.\n[-p] <image URI>        | Display toast with an image, local files only.\n[-w]                    | Wait for toast to expire or activate.\n[-id] <id>              | sets the id for a notification to be able to close it later.\n[-s] <sound URI>        | Sets the sound of the notifications, for possible values see http://msdn.microsoft.com/en-us/library/windows/apps/hh761492.aspx.\n[-silent]               | Don't play a sound file when showing the notifications.\n[-appID] <App.ID>       | Don't create a shortcut but use the provided app id.\n-close <id>             | Closes a currently displayed notification, in order to be able to close a notification the parameter -w must be used to create the notification.\n*/\nvar allowedToasterFlags = [\n  't',\n  'm',\n  'p',\n  'w',\n  'id',\n  's',\n  'silent',\n  'appID',\n  'close',\n  'install'\n];\nvar toasterSoundPrefix = 'Notification.';\nvar toasterDefaultSound = 'Notification.Default';\nmodule.exports.mapToWin8 = function(options) {\n  options = mapAppIcon(options);\n  options = mapText(options);\n\n  if (options.icon) {\n    if (/^file:\\/+/.test(options.icon)) {\n      // should parse file protocol URL to path\n      options.p = url\n        .parse(options.icon)\n        .pathname.replace(/^\\/(\\w:\\/)/, '$1')\n        .replace(/\\//g, '\\\\');\n    } else {\n      options.p = options.icon;\n    }\n    delete options.icon;\n  }\n\n  if (options.message) {\n    // Remove escape char to debug \"HRESULT : 0xC00CE508\" exception\n    options.m = options.message.replace(/\\x1b/g, '');\n    delete options.message;\n  }\n\n  if (options.title) {\n    options.t = options.title;\n    delete options.title;\n  }\n\n  if (options.appName) {\n    options.appID = options.appName;\n    delete options.appName;\n  }\n\n  if (typeof options.remove !== 'undefined') {\n    options.close = options.remove;\n    delete options.remove;\n  }\n\n  if (options.quiet || options.silent) {\n    options.silent = options.quiet || options.silent;\n    delete options.quiet;\n  }\n\n  if (typeof options.sound !== 'undefined') {\n    options.s = options.sound;\n    delete options.sound;\n  }\n\n  if (options.s === false) {\n    options.silent = true;\n    delete options.s;\n  }\n\n  // Silent takes precedence. Remove sound.\n  if (options.s && options.silent) {\n    delete options.s;\n  }\n\n  if (options.s === true) {\n    options.s = toasterDefaultSound;\n  }\n\n  if (options.s && options.s.indexOf(toasterSoundPrefix) !== 0) {\n    options.s = toasterDefaultSound;\n  }\n\n  if (options.wait) {\n    options.w = options.wait;\n    delete options.wait;\n  }\n\n  for (var key in options) {\n    // Check if is allowed. If not, delete!\n    if (\n      options.hasOwnProperty(key) &&\n      allowedToasterFlags.indexOf(key) === -1\n    ) {\n      delete options[key];\n    }\n  }\n\n  return options;\n};\n\nmodule.exports.mapToNotifu = function(options) {\n  options = mapAppIcon(options);\n  options = mapText(options);\n\n  if (options.icon) {\n    options.i = options.icon;\n    delete options.icon;\n  }\n\n  if (options.message) {\n    options.m = options.message;\n    delete options.message;\n  }\n\n  if (options.title) {\n    options.p = options.title;\n    delete options.title;\n  }\n\n  if (options.time) {\n    options.d = options.time;\n    delete options.time;\n  }\n\n  if (options.q !== false) {\n    options.q = true;\n  } else {\n    delete options.q;\n  }\n\n  if (options.quiet === false) {\n    delete options.q;\n    delete options.quiet;\n  }\n\n  if (options.sound) {\n    delete options.q;\n    delete options.sound;\n  }\n\n  if (options.t) {\n    options.d = options.t;\n    delete options.t;\n  }\n\n  if (options.type) {\n    options.t = sanitizeNotifuTypeArgument(options.type);\n    delete options.type;\n  }\n\n  return options;\n};\n\nmodule.exports.isMac = function() {\n  return os.type() === 'Darwin';\n};\n\nmodule.exports.isMountainLion = function() {\n  return (\n    os.type() === 'Darwin' &&\n    semver.satisfies(garanteeSemverFormat(os.release()), '>=12.0.0')\n  );\n};\n\nmodule.exports.isWin8 = function() {\n  return (\n    os.type() === 'Windows_NT' &&\n    semver.satisfies(garanteeSemverFormat(os.release()), '>=6.2.9200')\n  );\n};\n\nmodule.exports.isLessThanWin8 = function() {\n  return (\n    os.type() === 'Windows_NT' &&\n    semver.satisfies(garanteeSemverFormat(os.release()), '<6.2.9200')\n  );\n};\n\nfunction garanteeSemverFormat(version) {\n  if (version.split('.').length === 2) {\n    version += '.0';\n  }\n  return version;\n}\n\nfunction sanitizeNotifuTypeArgument(type) {\n  if (typeof type === 'string' || type instanceof String) {\n    if (type.toLowerCase() === 'info') return 'info';\n    if (type.toLowerCase() === 'warn') return 'warn';\n    if (type.toLowerCase() === 'error') return 'error';\n  }\n\n  return 'info';\n}\n\n\n//# sourceURL=webpack:///./node_modules/node-notifier/lib/utils.js?");
+var shellwords = __webpack_require__(/*! shellwords */ "./node_modules/shellwords/lib/shellwords.js");
+var cp = __webpack_require__(/*! child_process */ "child_process");
+var semver = __webpack_require__(/*! semver */ "./node_modules/semver/semver.js");
+var path = __webpack_require__(/*! path */ "path");
+var url = __webpack_require__(/*! url */ "url");
+var os = __webpack_require__(/*! os */ "os");
+var fs = __webpack_require__(/*! fs */ "fs");
+
+function clone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+module.exports.clone = clone;
+
+var escapeQuotes = function(str) {
+  if (typeof str === 'string') {
+    return str.replace(/(["$`\\])/g, '\\$1');
+  } else {
+    return str;
+  }
+};
+
+var inArray = function(arr, val) {
+  return arr.indexOf(val) !== -1;
+};
+
+var notifySendFlags = {
+  u: 'urgency',
+  urgency: 'urgency',
+  t: 'expire-time',
+  time: 'expire-time',
+  e: 'expire-time',
+  expire: 'expire-time',
+  'expire-time': 'expire-time',
+  i: 'icon',
+  icon: 'icon',
+  c: 'category',
+  category: 'category',
+  subtitle: 'category',
+  h: 'hint',
+  hint: 'hint'
+};
+
+module.exports.command = function(notifier, options, cb) {
+  notifier = shellwords.escape(notifier);
+  if (process.env.DEBUG && process.env.DEBUG.indexOf('notifier') !== -1) {
+    console.info('node-notifier debug info (command):');
+    console.info('[notifier path]', notifier);
+    console.info('[notifier options]', options.join(' '));
+  }
+
+  return cp.exec(notifier + ' ' + options.join(' '), function(
+    error,
+    stdout,
+    stderr
+  ) {
+    if (error) return cb(error);
+    cb(stderr, stdout);
+  });
+};
+
+module.exports.fileCommand = function(notifier, options, cb) {
+  if (process.env.DEBUG && process.env.DEBUG.indexOf('notifier') !== -1) {
+    console.info('node-notifier debug info (fileCommand):');
+    console.info('[notifier path]', notifier);
+    console.info('[notifier options]', options.join(' '));
+  }
+
+  return cp.execFile(notifier, options, function(error, stdout, stderr) {
+    if (error) return cb(error, stdout);
+    cb(stderr, stdout);
+  });
+};
+
+module.exports.fileCommandJson = function(notifier, options, cb) {
+  if (process.env.DEBUG && process.env.DEBUG.indexOf('notifier') !== -1) {
+    console.info('node-notifier debug info (fileCommandJson):');
+    console.info('[notifier path]', notifier);
+    console.info('[notifier options]', options.join(' '));
+  }
+  return cp.execFile(notifier, options, function(error, stdout, stderr) {
+    if (error) return cb(error, stdout);
+    if (!stdout) return cb(error, {});
+
+    try {
+      var data = JSON.parse(stdout);
+      cb(stderr, data);
+    } catch (e) {
+      cb(e, stdout);
+    }
+  });
+};
+
+module.exports.immediateFileCommand = function(notifier, options, cb) {
+  if (process.env.DEBUG && process.env.DEBUG.indexOf('notifier') !== -1) {
+    console.info('node-notifier debug info (notifier):');
+    console.info('[notifier path]', notifier);
+  }
+
+  notifierExists(notifier, function(_, exists) {
+    if (!exists) {
+      return cb(new Error('Notifier (' + notifier + ') not found on system.'));
+    }
+    cp.execFile(notifier, options);
+    cb();
+  });
+};
+
+function notifierExists(notifier, cb) {
+  return fs.stat(notifier, function(err, stat) {
+    if (!err) return cb(err, stat.isFile());
+
+    // Check if Windows alias
+    if (path.extname(notifier)) {
+      // Has extentioon, no need to check more
+      return cb(err, false);
+    }
+
+    // Check if there is an exe file in the directory
+    return fs.stat(notifier + '.exe', function(err, stat) {
+      if (err) return cb(err, false);
+      cb(err, stat.isFile());
+    });
+  });
+}
+
+var mapAppIcon = function(options) {
+  if (options.appIcon) {
+    options.icon = options.appIcon;
+    delete options.appIcon;
+  }
+
+  return options;
+};
+
+var mapText = function(options) {
+  if (options.text) {
+    options.message = options.text;
+    delete options.text;
+  }
+
+  return options;
+};
+
+var mapIconShorthand = function(options) {
+  if (options.i) {
+    options.icon = options.i;
+    delete options.i;
+  }
+
+  return options;
+};
+
+module.exports.mapToNotifySend = function(options) {
+  options = mapAppIcon(options);
+  options = mapText(options);
+
+  for (var key in options) {
+    if (key === 'message' || key === 'title') continue;
+    if (options.hasOwnProperty(key) && notifySendFlags[key] !== key) {
+      options[notifySendFlags[key]] = options[key];
+      delete options[key];
+    }
+  }
+
+  return options;
+};
+
+module.exports.mapToGrowl = function(options) {
+  options = mapAppIcon(options);
+  options = mapIconShorthand(options);
+  options = mapText(options);
+
+  if (options.icon && !Buffer.isBuffer(options.icon)) {
+    try {
+      options.icon = fs.readFileSync(options.icon);
+    } catch (ex) {}
+  }
+
+  return options;
+};
+
+module.exports.mapToMac = function(options) {
+  options = mapIconShorthand(options);
+  options = mapText(options);
+
+  if (options.icon) {
+    options.appIcon = options.icon;
+    delete options.icon;
+  }
+
+  if (options.sound === true) {
+    options.sound = 'Bottle';
+  }
+
+  if (options.sound === false) {
+    delete options.sound;
+  }
+
+  if (options.sound && options.sound.indexOf('Notification.') === 0) {
+    options.sound = 'Bottle';
+  }
+
+  if (options.wait === true) {
+    if (!options.timeout) {
+      options.timeout = 5;
+    }
+    delete options.wait;
+  }
+
+  options.json = true;
+  return options;
+};
+
+function isArray(arr) {
+  return Object.prototype.toString.call(arr) === '[object Array]';
+}
+
+function noop() {}
+module.exports.actionJackerDecorator = function(emitter, options, fn, mapper) {
+  options = clone(options);
+  fn = fn || noop;
+
+  if (typeof fn !== 'function') {
+    throw new TypeError(
+      'The second argument must be a function callback. You have passed ' +
+        typeof fn
+    );
+  }
+
+  return function(err, data) {
+    var resultantData = data;
+    var metadata = {};
+    // Allow for extra data if resultantData is an object
+    if (resultantData && typeof resultantData === 'object') {
+      metadata = resultantData;
+      resultantData = resultantData.activationType;
+    }
+
+    // Sanitize the data
+    if (resultantData) {
+      resultantData = resultantData.toLowerCase().trim();
+      if (resultantData.match(/^activate|clicked$/)) {
+        resultantData = 'activate';
+      }
+    }
+
+    fn.apply(emitter, [err, resultantData, metadata]);
+    if (!mapper || !resultantData) return;
+
+    var key = mapper(resultantData);
+    if (!key) return;
+    emitter.emit(key, emitter, options, metadata);
+  };
+};
+
+module.exports.constructArgumentList = function(options, extra) {
+  var args = [];
+  extra = extra || {};
+
+  // Massive ugly setup. Default args
+  var initial = extra.initial || [];
+  var keyExtra = extra.keyExtra || '';
+  var allowedArguments = extra.allowedArguments || [];
+  var noEscape = extra.noEscape !== void 0;
+  var checkForAllowed = extra.allowedArguments !== void 0;
+  var explicitTrue = !!extra.explicitTrue;
+  var keepNewlines = !!extra.keepNewlines;
+  var wrapper = extra.wrapper === void 0 ? '"' : extra.wrapper;
+
+  var escapeFn = function(arg) {
+    if (isArray(arg)) {
+      return removeNewLines(arg.join(','));
+    }
+
+    if (!noEscape) {
+      arg = escapeQuotes(arg);
+    }
+    if (typeof arg === 'string' && !keepNewlines) {
+      arg = removeNewLines(arg);
+    }
+    return wrapper + arg + wrapper;
+  };
+
+  initial.forEach(function(val) {
+    args.push(escapeFn(val));
+  });
+  for (var key in options) {
+    if (
+      options.hasOwnProperty(key) &&
+      (!checkForAllowed || inArray(allowedArguments, key))
+    ) {
+      if (explicitTrue && options[key] === true) {
+        args.push('-' + keyExtra + key);
+      } else if (explicitTrue && options[key] === false) continue;
+      else args.push('-' + keyExtra + key, escapeFn(options[key]));
+    }
+  }
+  return args;
+};
+
+function removeNewLines(str) {
+  var excapedNewline = process.platform === 'win32' ? '\\r\\n' : '\\n';
+  return str.replace(/\r?\n/g, excapedNewline);
+}
+
+/*
+---- Options ----
+[-t] <title string>     | Displayed on the first line of the toast.
+[-m] <message string>   | Displayed on the remaining lines, wrapped.
+[-p] <image URI>        | Display toast with an image, local files only.
+[-w]                    | Wait for toast to expire or activate.
+[-id] <id>              | sets the id for a notification to be able to close it later.
+[-s] <sound URI>        | Sets the sound of the notifications, for possible values see http://msdn.microsoft.com/en-us/library/windows/apps/hh761492.aspx.
+[-silent]               | Don't play a sound file when showing the notifications.
+[-appID] <App.ID>       | Don't create a shortcut but use the provided app id.
+-close <id>             | Closes a currently displayed notification, in order to be able to close a notification the parameter -w must be used to create the notification.
+*/
+var allowedToasterFlags = [
+  't',
+  'm',
+  'p',
+  'w',
+  'id',
+  's',
+  'silent',
+  'appID',
+  'close',
+  'install'
+];
+var toasterSoundPrefix = 'Notification.';
+var toasterDefaultSound = 'Notification.Default';
+module.exports.mapToWin8 = function(options) {
+  options = mapAppIcon(options);
+  options = mapText(options);
+
+  if (options.icon) {
+    if (/^file:\/+/.test(options.icon)) {
+      // should parse file protocol URL to path
+      options.p = url
+        .parse(options.icon)
+        .pathname.replace(/^\/(\w:\/)/, '$1')
+        .replace(/\//g, '\\');
+    } else {
+      options.p = options.icon;
+    }
+    delete options.icon;
+  }
+
+  if (options.message) {
+    // Remove escape char to debug "HRESULT : 0xC00CE508" exception
+    options.m = options.message.replace(/\x1b/g, '');
+    delete options.message;
+  }
+
+  if (options.title) {
+    options.t = options.title;
+    delete options.title;
+  }
+
+  if (options.appName) {
+    options.appID = options.appName;
+    delete options.appName;
+  }
+
+  if (typeof options.remove !== 'undefined') {
+    options.close = options.remove;
+    delete options.remove;
+  }
+
+  if (options.quiet || options.silent) {
+    options.silent = options.quiet || options.silent;
+    delete options.quiet;
+  }
+
+  if (typeof options.sound !== 'undefined') {
+    options.s = options.sound;
+    delete options.sound;
+  }
+
+  if (options.s === false) {
+    options.silent = true;
+    delete options.s;
+  }
+
+  // Silent takes precedence. Remove sound.
+  if (options.s && options.silent) {
+    delete options.s;
+  }
+
+  if (options.s === true) {
+    options.s = toasterDefaultSound;
+  }
+
+  if (options.s && options.s.indexOf(toasterSoundPrefix) !== 0) {
+    options.s = toasterDefaultSound;
+  }
+
+  if (options.wait) {
+    options.w = options.wait;
+    delete options.wait;
+  }
+
+  for (var key in options) {
+    // Check if is allowed. If not, delete!
+    if (
+      options.hasOwnProperty(key) &&
+      allowedToasterFlags.indexOf(key) === -1
+    ) {
+      delete options[key];
+    }
+  }
+
+  return options;
+};
+
+module.exports.mapToNotifu = function(options) {
+  options = mapAppIcon(options);
+  options = mapText(options);
+
+  if (options.icon) {
+    options.i = options.icon;
+    delete options.icon;
+  }
+
+  if (options.message) {
+    options.m = options.message;
+    delete options.message;
+  }
+
+  if (options.title) {
+    options.p = options.title;
+    delete options.title;
+  }
+
+  if (options.time) {
+    options.d = options.time;
+    delete options.time;
+  }
+
+  if (options.q !== false) {
+    options.q = true;
+  } else {
+    delete options.q;
+  }
+
+  if (options.quiet === false) {
+    delete options.q;
+    delete options.quiet;
+  }
+
+  if (options.sound) {
+    delete options.q;
+    delete options.sound;
+  }
+
+  if (options.t) {
+    options.d = options.t;
+    delete options.t;
+  }
+
+  if (options.type) {
+    options.t = sanitizeNotifuTypeArgument(options.type);
+    delete options.type;
+  }
+
+  return options;
+};
+
+module.exports.isMac = function() {
+  return os.type() === 'Darwin';
+};
+
+module.exports.isMountainLion = function() {
+  return (
+    os.type() === 'Darwin' &&
+    semver.satisfies(garanteeSemverFormat(os.release()), '>=12.0.0')
+  );
+};
+
+module.exports.isWin8 = function() {
+  return (
+    os.type() === 'Windows_NT' &&
+    semver.satisfies(garanteeSemverFormat(os.release()), '>=6.2.9200')
+  );
+};
+
+module.exports.isLessThanWin8 = function() {
+  return (
+    os.type() === 'Windows_NT' &&
+    semver.satisfies(garanteeSemverFormat(os.release()), '<6.2.9200')
+  );
+};
+
+function garanteeSemverFormat(version) {
+  if (version.split('.').length === 2) {
+    version += '.0';
+  }
+  return version;
+}
+
+function sanitizeNotifuTypeArgument(type) {
+  if (typeof type === 'string' || type instanceof String) {
+    if (type.toLowerCase() === 'info') return 'info';
+    if (type.toLowerCase() === 'warn') return 'warn';
+    if (type.toLowerCase() === 'error') return 'error';
+  }
+
+  return 'info';
+}
+
 
 /***/ }),
 
@@ -195,7 +1313,164 @@ eval("var shellwords = __webpack_require__(/*! shellwords */ \"./node_modules/sh
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("/* WEBPACK VAR INJECTION */(function(__dirname) {/**\n * Wrapper for the notifu 1.6 (http://www.paralint.com/projects/notifu/)\n\nUsage\n/t <value>      The type of message to display values are:\n                    info      The message is an informational message\n                    warn      The message is an warning message\n                    error     The message is an error message\n/d <value>      The number of milliseconds to display (omit or 0 for infinit)\n/p <value>      The title (or prompt) of the ballon\n/m <value>      The message text\n/i <value>      Specify an icon to use (\"parent\" uses the icon of the parent process)\n/e              Enable ballon tips in the registry (for this user only)\n/q              Do not play a sound when the tooltip is displayed\n/w              Show the tooltip even if the user is in the quiet period that follows his very first login (Windows 7 and up)\n/xp             Use IUserNotification interface event when IUserNotification2 is available\n\n// Kill codes:\n  2 = Timeout\n  3 = Clicked\n  4 = Closed or faded out\n\n */\nvar path = __webpack_require__(/*! path */ \"path\");\nvar notifier = path.resolve(__dirname, '../vendor/notifu/notifu');\nvar checkGrowl = __webpack_require__(/*! ../lib/checkGrowl */ \"./node_modules/node-notifier/lib/checkGrowl.js\");\nvar utils = __webpack_require__(/*! ../lib/utils */ \"./node_modules/node-notifier/lib/utils.js\");\nvar Toaster = __webpack_require__(/*! ./toaster */ \"./node_modules/node-notifier/notifiers/toaster.js\");\nvar Growl = __webpack_require__(/*! ./growl */ \"./node_modules/node-notifier/notifiers/growl.js\");\nvar os = __webpack_require__(/*! os */ \"os\");\n\nvar EventEmitter = __webpack_require__(/*! events */ \"events\").EventEmitter;\nvar util = __webpack_require__(/*! util */ \"util\");\n\nvar hasGrowl = void 0;\n\nmodule.exports = WindowsBalloon;\n\nfunction WindowsBalloon(options) {\n  options = utils.clone(options || {});\n  if (!(this instanceof WindowsBalloon)) {\n    return new WindowsBalloon(options);\n  }\n\n  this.options = options;\n\n  EventEmitter.call(this);\n}\nutil.inherits(WindowsBalloon, EventEmitter);\n\nfunction noop() {}\nWindowsBalloon.prototype.notify = function(options, callback) {\n  var fallback;\n  var notifierOptions = this.options;\n  options = utils.clone(options || {});\n  callback = callback || noop;\n\n  if (typeof options === 'string') {\n    options = { title: 'node-notifier', message: options };\n  }\n\n  var actionJackedCallback = utils.actionJackerDecorator(\n    this,\n    options,\n    callback,\n    function(data) {\n      if (data === 'activate') {\n        return 'click';\n      }\n      if (data === 'timeout') {\n        return 'timeout';\n      }\n      return false;\n    }\n  );\n\n  if (!!this.options.withFallback && utils.isWin8()) {\n    fallback = fallback || new Toaster(notifierOptions);\n    return fallback.notify(options, callback);\n  }\n\n  if (\n    !!this.options.withFallback &&\n    (!utils.isLessThanWin8() || hasGrowl === true)\n  ) {\n    fallback = fallback || new Growl(notifierOptions);\n    return fallback.notify(options, callback);\n  }\n\n  if (!this.options.withFallback || hasGrowl === false) {\n    doNotification(options, notifierOptions, actionJackedCallback);\n    return this;\n  }\n\n  checkGrowl(notifierOptions, function(_, hasGrowlResult) {\n    hasGrowl = hasGrowlResult;\n\n    if (hasGrowl) {\n      fallback = fallback || new Growl(notifierOptions);\n      return fallback.notify(options, callback);\n    }\n\n    doNotification(options, notifierOptions, actionJackedCallback);\n  });\n\n  return this;\n};\n\nvar allowedArguments = ['t', 'd', 'p', 'm', 'i', 'e', 'q', 'w', 'xp'];\n\nfunction doNotification(options, notifierOptions, callback) {\n  var is64Bit = os.arch() === 'x64';\n  options = options || {};\n  options = utils.mapToNotifu(options);\n  options.p = options.p || 'Node Notification:';\n\n  var fullNotifierPath = notifier + (is64Bit ? '64' : '') + '.exe';\n  var localNotifier = notifierOptions.customPath || fullNotifierPath;\n\n  if (!options.m) {\n    callback(new Error('Message is required.'));\n    return this;\n  }\n\n  var argsList = utils.constructArgumentList(options, {\n    wrapper: '',\n    noEscape: true,\n    explicitTrue: true,\n    allowedArguments: allowedArguments\n  });\n\n  if (options.wait) {\n    return utils.fileCommand(localNotifier, argsList, function(error, data) {\n      var action = fromErrorCodeToAction(error.code);\n      if (action === 'error') return callback(error, data);\n\n      return callback(null, action);\n    });\n  }\n  utils.immediateFileCommand(localNotifier, argsList, callback);\n}\n\nfunction fromErrorCodeToAction(errorCode) {\n  switch (errorCode) {\n    case 2:\n      return 'timeout';\n    case 3:\n    case 6:\n    case 7:\n      return 'activate';\n    case 4:\n      return 'close';\n    default:\n      return 'error';\n  }\n}\n\n/* WEBPACK VAR INJECTION */}.call(this, \"node_modules/node-notifier/notifiers\"))\n\n//# sourceURL=webpack:///./node_modules/node-notifier/notifiers/balloon.js?");
+/* WEBPACK VAR INJECTION */(function(__dirname) {/**
+ * Wrapper for the notifu 1.6 (http://www.paralint.com/projects/notifu/)
+
+Usage
+/t <value>      The type of message to display values are:
+                    info      The message is an informational message
+                    warn      The message is an warning message
+                    error     The message is an error message
+/d <value>      The number of milliseconds to display (omit or 0 for infinit)
+/p <value>      The title (or prompt) of the ballon
+/m <value>      The message text
+/i <value>      Specify an icon to use ("parent" uses the icon of the parent process)
+/e              Enable ballon tips in the registry (for this user only)
+/q              Do not play a sound when the tooltip is displayed
+/w              Show the tooltip even if the user is in the quiet period that follows his very first login (Windows 7 and up)
+/xp             Use IUserNotification interface event when IUserNotification2 is available
+
+// Kill codes:
+  2 = Timeout
+  3 = Clicked
+  4 = Closed or faded out
+
+ */
+var path = __webpack_require__(/*! path */ "path");
+var notifier = path.resolve(__dirname, '../vendor/notifu/notifu');
+var checkGrowl = __webpack_require__(/*! ../lib/checkGrowl */ "./node_modules/node-notifier/lib/checkGrowl.js");
+var utils = __webpack_require__(/*! ../lib/utils */ "./node_modules/node-notifier/lib/utils.js");
+var Toaster = __webpack_require__(/*! ./toaster */ "./node_modules/node-notifier/notifiers/toaster.js");
+var Growl = __webpack_require__(/*! ./growl */ "./node_modules/node-notifier/notifiers/growl.js");
+var os = __webpack_require__(/*! os */ "os");
+
+var EventEmitter = __webpack_require__(/*! events */ "events").EventEmitter;
+var util = __webpack_require__(/*! util */ "util");
+
+var hasGrowl = void 0;
+
+module.exports = WindowsBalloon;
+
+function WindowsBalloon(options) {
+  options = utils.clone(options || {});
+  if (!(this instanceof WindowsBalloon)) {
+    return new WindowsBalloon(options);
+  }
+
+  this.options = options;
+
+  EventEmitter.call(this);
+}
+util.inherits(WindowsBalloon, EventEmitter);
+
+function noop() {}
+WindowsBalloon.prototype.notify = function(options, callback) {
+  var fallback;
+  var notifierOptions = this.options;
+  options = utils.clone(options || {});
+  callback = callback || noop;
+
+  if (typeof options === 'string') {
+    options = { title: 'node-notifier', message: options };
+  }
+
+  var actionJackedCallback = utils.actionJackerDecorator(
+    this,
+    options,
+    callback,
+    function(data) {
+      if (data === 'activate') {
+        return 'click';
+      }
+      if (data === 'timeout') {
+        return 'timeout';
+      }
+      return false;
+    }
+  );
+
+  if (!!this.options.withFallback && utils.isWin8()) {
+    fallback = fallback || new Toaster(notifierOptions);
+    return fallback.notify(options, callback);
+  }
+
+  if (
+    !!this.options.withFallback &&
+    (!utils.isLessThanWin8() || hasGrowl === true)
+  ) {
+    fallback = fallback || new Growl(notifierOptions);
+    return fallback.notify(options, callback);
+  }
+
+  if (!this.options.withFallback || hasGrowl === false) {
+    doNotification(options, notifierOptions, actionJackedCallback);
+    return this;
+  }
+
+  checkGrowl(notifierOptions, function(_, hasGrowlResult) {
+    hasGrowl = hasGrowlResult;
+
+    if (hasGrowl) {
+      fallback = fallback || new Growl(notifierOptions);
+      return fallback.notify(options, callback);
+    }
+
+    doNotification(options, notifierOptions, actionJackedCallback);
+  });
+
+  return this;
+};
+
+var allowedArguments = ['t', 'd', 'p', 'm', 'i', 'e', 'q', 'w', 'xp'];
+
+function doNotification(options, notifierOptions, callback) {
+  var is64Bit = os.arch() === 'x64';
+  options = options || {};
+  options = utils.mapToNotifu(options);
+  options.p = options.p || 'Node Notification:';
+
+  var fullNotifierPath = notifier + (is64Bit ? '64' : '') + '.exe';
+  var localNotifier = notifierOptions.customPath || fullNotifierPath;
+
+  if (!options.m) {
+    callback(new Error('Message is required.'));
+    return this;
+  }
+
+  var argsList = utils.constructArgumentList(options, {
+    wrapper: '',
+    noEscape: true,
+    explicitTrue: true,
+    allowedArguments: allowedArguments
+  });
+
+  if (options.wait) {
+    return utils.fileCommand(localNotifier, argsList, function(error, data) {
+      var action = fromErrorCodeToAction(error.code);
+      if (action === 'error') return callback(error, data);
+
+      return callback(null, action);
+    });
+  }
+  utils.immediateFileCommand(localNotifier, argsList, callback);
+}
+
+function fromErrorCodeToAction(errorCode) {
+  switch (errorCode) {
+    case 2:
+      return 'timeout';
+    case 3:
+    case 6:
+    case 7:
+      return 'activate';
+    case 4:
+      return 'close';
+    default:
+      return 'error';
+  }
+}
+
+/* WEBPACK VAR INJECTION */}.call(this, "node_modules/node-notifier/notifiers"))
 
 /***/ }),
 
@@ -206,7 +1481,83 @@ eval("/* WEBPACK VAR INJECTION */(function(__dirname) {/**\n * Wrapper for the n
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("/**\n * Wrapper for the growly module\n */\nvar checkGrowl = __webpack_require__(/*! ../lib/checkGrowl */ \"./node_modules/node-notifier/lib/checkGrowl.js\");\nvar utils = __webpack_require__(/*! ../lib/utils */ \"./node_modules/node-notifier/lib/utils.js\");\nvar growly = __webpack_require__(/*! growly */ \"./node_modules/growly/lib/growly.js\");\n\nvar EventEmitter = __webpack_require__(/*! events */ \"events\").EventEmitter;\nvar util = __webpack_require__(/*! util */ \"util\");\n\nvar errorMessageNotFound =\n  \"Couldn't connect to growl (might be used as a fallback). Make sure it is running\";\n\nmodule.exports = Growl;\n\nvar hasGrowl = void 0;\n\nfunction Growl(options) {\n  options = utils.clone(options || {});\n  if (!(this instanceof Growl)) {\n    return new Growl(options);\n  }\n\n  growly.appname = options.name || 'Node';\n  this.options = options;\n\n  EventEmitter.call(this);\n}\nutil.inherits(Growl, EventEmitter);\n\nGrowl.prototype.notify = function(options, callback) {\n  growly.setHost(this.options.host, this.options.port);\n  options = utils.clone(options || {});\n\n  if (typeof options === 'string') {\n    options = { title: 'node-notifier', message: options };\n  }\n\n  callback = utils.actionJackerDecorator(this, options, callback, function(\n    data\n  ) {\n    if (data === 'click') {\n      return 'click';\n    }\n    if (data === 'timedout') {\n      return 'timeout';\n    }\n    return false;\n  });\n\n  options = utils.mapToGrowl(options);\n\n  if (!options.message) {\n    callback(new Error('Message is required.'));\n    return this;\n  }\n\n  options.title = options.title || 'Node Notification:';\n\n  if (hasGrowl || !!options.wait) {\n    var localCallback = options.wait ? callback : noop;\n    growly.notify(options.message, options, localCallback);\n    if (!options.wait) callback();\n    return this;\n  }\n\n  checkGrowl(growly, function(_, didHaveGrowl) {\n    hasGrowl = didHaveGrowl;\n    if (!didHaveGrowl) return callback(new Error(errorMessageNotFound));\n    growly.notify(options.message, options);\n    callback();\n  });\n  return this;\n};\n\nfunction noop() {}\n\n\n//# sourceURL=webpack:///./node_modules/node-notifier/notifiers/growl.js?");
+/**
+ * Wrapper for the growly module
+ */
+var checkGrowl = __webpack_require__(/*! ../lib/checkGrowl */ "./node_modules/node-notifier/lib/checkGrowl.js");
+var utils = __webpack_require__(/*! ../lib/utils */ "./node_modules/node-notifier/lib/utils.js");
+var growly = __webpack_require__(/*! growly */ "./node_modules/growly/lib/growly.js");
+
+var EventEmitter = __webpack_require__(/*! events */ "events").EventEmitter;
+var util = __webpack_require__(/*! util */ "util");
+
+var errorMessageNotFound =
+  "Couldn't connect to growl (might be used as a fallback). Make sure it is running";
+
+module.exports = Growl;
+
+var hasGrowl = void 0;
+
+function Growl(options) {
+  options = utils.clone(options || {});
+  if (!(this instanceof Growl)) {
+    return new Growl(options);
+  }
+
+  growly.appname = options.name || 'Node';
+  this.options = options;
+
+  EventEmitter.call(this);
+}
+util.inherits(Growl, EventEmitter);
+
+Growl.prototype.notify = function(options, callback) {
+  growly.setHost(this.options.host, this.options.port);
+  options = utils.clone(options || {});
+
+  if (typeof options === 'string') {
+    options = { title: 'node-notifier', message: options };
+  }
+
+  callback = utils.actionJackerDecorator(this, options, callback, function(
+    data
+  ) {
+    if (data === 'click') {
+      return 'click';
+    }
+    if (data === 'timedout') {
+      return 'timeout';
+    }
+    return false;
+  });
+
+  options = utils.mapToGrowl(options);
+
+  if (!options.message) {
+    callback(new Error('Message is required.'));
+    return this;
+  }
+
+  options.title = options.title || 'Node Notification:';
+
+  if (hasGrowl || !!options.wait) {
+    var localCallback = options.wait ? callback : noop;
+    growly.notify(options.message, options, localCallback);
+    if (!options.wait) callback();
+    return this;
+  }
+
+  checkGrowl(growly, function(_, didHaveGrowl) {
+    hasGrowl = didHaveGrowl;
+    if (!didHaveGrowl) return callback(new Error(errorMessageNotFound));
+    growly.notify(options.message, options);
+    callback();
+  });
+  return this;
+};
+
+function noop() {}
+
 
 /***/ }),
 
@@ -217,7 +1568,108 @@ eval("/**\n * Wrapper for the growly module\n */\nvar checkGrowl = __webpack_req
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("/* WEBPACK VAR INJECTION */(function(__dirname) {/**\n * A Node.js wrapper for terminal-notify (with fallback).\n */\nvar utils = __webpack_require__(/*! ../lib/utils */ \"./node_modules/node-notifier/lib/utils.js\");\nvar Growl = __webpack_require__(/*! ./growl */ \"./node_modules/node-notifier/notifiers/growl.js\");\nvar path = __webpack_require__(/*! path */ \"path\");\nvar notifier = path.join(\n  __dirname,\n  '../vendor/terminal-notifier.app/Contents/MacOS/terminal-notifier'\n);\n\nvar EventEmitter = __webpack_require__(/*! events */ \"events\").EventEmitter;\nvar util = __webpack_require__(/*! util */ \"util\");\n\nvar errorMessageOsX =\n  'You need Mac OS X 10.8 or above to use NotificationCenter,' +\n  ' or use Growl fallback with constructor option {withFallback: true}.';\n\nmodule.exports = NotificationCenter;\n\nfunction NotificationCenter(options) {\n  options = utils.clone(options || {});\n  if (!(this instanceof NotificationCenter)) {\n    return new NotificationCenter(options);\n  }\n  this.options = options;\n\n  EventEmitter.call(this);\n}\nutil.inherits(NotificationCenter, EventEmitter);\nvar activeId = null;\n\nfunction noop() {}\nNotificationCenter.prototype.notify = function(options, callback) {\n  var fallbackNotifier;\n  var id = identificator();\n  options = utils.clone(options || {});\n  activeId = id;\n\n  if (typeof options === 'string') {\n    options = { title: 'node-notifier', message: options };\n  }\n  callback = callback || noop;\n\n  if (typeof callback !== 'function') {\n    throw new TypeError(\n      'The second argument must be a function callback. You have passed ' +\n        typeof fn\n    );\n  }\n\n  var actionJackedCallback = utils.actionJackerDecorator(\n    this,\n    options,\n    callback,\n    function(data) {\n      if (activeId !== id) return false;\n\n      if (data === 'activate') {\n        return 'click';\n      }\n      if (data === 'timeout') {\n        return 'timeout';\n      }\n      if (data === 'replied') {\n        return 'replied';\n      }\n      return false;\n    }\n  );\n\n  options = utils.mapToMac(options);\n\n  if (!options.message && !options.group && !options.list && !options.remove) {\n    callback(new Error('Message, group, remove or list property is required.'));\n    return this;\n  }\n\n  var argsList = utils.constructArgumentList(options);\n  if (utils.isMountainLion()) {\n    utils.fileCommandJson(\n      this.options.customPath || notifier,\n      argsList,\n      actionJackedCallback\n    );\n    return this;\n  }\n\n  if (fallbackNotifier || !!this.options.withFallback) {\n    fallbackNotifier = fallbackNotifier || new Growl(this.options);\n    return fallbackNotifier.notify(options, callback);\n  }\n\n  callback(new Error(errorMessageOsX));\n  return this;\n};\n\nfunction identificator() {\n  return { _ref: 'val' };\n}\n\n/* WEBPACK VAR INJECTION */}.call(this, \"node_modules/node-notifier/notifiers\"))\n\n//# sourceURL=webpack:///./node_modules/node-notifier/notifiers/notificationcenter.js?");
+/* WEBPACK VAR INJECTION */(function(__dirname) {/**
+ * A Node.js wrapper for terminal-notify (with fallback).
+ */
+var utils = __webpack_require__(/*! ../lib/utils */ "./node_modules/node-notifier/lib/utils.js");
+var Growl = __webpack_require__(/*! ./growl */ "./node_modules/node-notifier/notifiers/growl.js");
+var path = __webpack_require__(/*! path */ "path");
+var notifier = path.join(
+  __dirname,
+  '../vendor/terminal-notifier.app/Contents/MacOS/terminal-notifier'
+);
+
+var EventEmitter = __webpack_require__(/*! events */ "events").EventEmitter;
+var util = __webpack_require__(/*! util */ "util");
+
+var errorMessageOsX =
+  'You need Mac OS X 10.8 or above to use NotificationCenter,' +
+  ' or use Growl fallback with constructor option {withFallback: true}.';
+
+module.exports = NotificationCenter;
+
+function NotificationCenter(options) {
+  options = utils.clone(options || {});
+  if (!(this instanceof NotificationCenter)) {
+    return new NotificationCenter(options);
+  }
+  this.options = options;
+
+  EventEmitter.call(this);
+}
+util.inherits(NotificationCenter, EventEmitter);
+var activeId = null;
+
+function noop() {}
+NotificationCenter.prototype.notify = function(options, callback) {
+  var fallbackNotifier;
+  var id = identificator();
+  options = utils.clone(options || {});
+  activeId = id;
+
+  if (typeof options === 'string') {
+    options = { title: 'node-notifier', message: options };
+  }
+  callback = callback || noop;
+
+  if (typeof callback !== 'function') {
+    throw new TypeError(
+      'The second argument must be a function callback. You have passed ' +
+        typeof fn
+    );
+  }
+
+  var actionJackedCallback = utils.actionJackerDecorator(
+    this,
+    options,
+    callback,
+    function(data) {
+      if (activeId !== id) return false;
+
+      if (data === 'activate') {
+        return 'click';
+      }
+      if (data === 'timeout') {
+        return 'timeout';
+      }
+      if (data === 'replied') {
+        return 'replied';
+      }
+      return false;
+    }
+  );
+
+  options = utils.mapToMac(options);
+
+  if (!options.message && !options.group && !options.list && !options.remove) {
+    callback(new Error('Message, group, remove or list property is required.'));
+    return this;
+  }
+
+  var argsList = utils.constructArgumentList(options);
+  if (utils.isMountainLion()) {
+    utils.fileCommandJson(
+      this.options.customPath || notifier,
+      argsList,
+      actionJackedCallback
+    );
+    return this;
+  }
+
+  if (fallbackNotifier || !!this.options.withFallback) {
+    fallbackNotifier = fallbackNotifier || new Growl(this.options);
+    return fallbackNotifier.notify(options, callback);
+  }
+
+  callback(new Error(errorMessageOsX));
+  return this;
+};
+
+function identificator() {
+  return { _ref: 'val' };
+}
+
+/* WEBPACK VAR INJECTION */}.call(this, "node_modules/node-notifier/notifiers"))
 
 /***/ }),
 
@@ -228,7 +1680,101 @@ eval("/* WEBPACK VAR INJECTION */(function(__dirname) {/**\n * A Node.js wrapper
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("/**\n * Node.js wrapper for \"notify-send\".\n */\nvar os = __webpack_require__(/*! os */ \"os\");\nvar which = __webpack_require__(/*! which */ \"./node_modules/which/which.js\");\nvar utils = __webpack_require__(/*! ../lib/utils */ \"./node_modules/node-notifier/lib/utils.js\");\n\nvar EventEmitter = __webpack_require__(/*! events */ \"events\").EventEmitter;\nvar util = __webpack_require__(/*! util */ \"util\");\n\nvar notifier = 'notify-send';\nvar hasNotifier = void 0;\n\nmodule.exports = NotifySend;\n\nfunction NotifySend(options) {\n  options = utils.clone(options || {});\n  if (!(this instanceof NotifySend)) {\n    return new NotifySend(options);\n  }\n\n  this.options = options;\n\n  EventEmitter.call(this);\n}\nutil.inherits(NotifySend, EventEmitter);\n\nfunction noop() {}\nNotifySend.prototype.notify = function(options, callback) {\n  options = utils.clone(options || {});\n  callback = callback || noop;\n\n  if (typeof callback !== 'function') {\n    throw new TypeError(\n      'The second argument must be a function callback. You have passed ' +\n        typeof callback\n    );\n  }\n\n  if (typeof options === 'string') {\n    options = { title: 'node-notifier', message: options };\n  }\n\n  if (!options.message) {\n    callback(new Error('Message is required.'));\n    return this;\n  }\n\n  if (os.type() !== 'Linux' && !os.type().match(/BSD$/)) {\n    callback(new Error('Only supported on Linux and *BSD systems'));\n    return this;\n  }\n\n  if (hasNotifier === false) {\n    callback(new Error('notify-send must be installed on the system.'));\n    return this;\n  }\n\n  if (hasNotifier || !!this.options.suppressOsdCheck) {\n    doNotification(options, callback);\n    return this;\n  }\n\n  try {\n    hasNotifier = !!which.sync(notifier);\n    doNotification(options, callback);\n  } catch (err) {\n    hasNotifier = false;\n    return callback(err);\n  }\n\n  return this;\n};\n\nvar allowedArguments = ['urgency', 'expire-time', 'icon', 'category', 'hint'];\n\nfunction doNotification(options, callback) {\n  var initial, argsList;\n\n  options = utils.mapToNotifySend(options);\n  options.title = options.title || 'Node Notification:';\n\n  initial = [options.title, options.message];\n  delete options.title;\n  delete options.message;\n\n  argsList = utils.constructArgumentList(options, {\n    initial: initial,\n    keyExtra: '-',\n    allowedArguments: allowedArguments\n  });\n\n  utils.command(notifier, argsList, callback);\n}\n\n\n//# sourceURL=webpack:///./node_modules/node-notifier/notifiers/notifysend.js?");
+/**
+ * Node.js wrapper for "notify-send".
+ */
+var os = __webpack_require__(/*! os */ "os");
+var which = __webpack_require__(/*! which */ "./node_modules/which/which.js");
+var utils = __webpack_require__(/*! ../lib/utils */ "./node_modules/node-notifier/lib/utils.js");
+
+var EventEmitter = __webpack_require__(/*! events */ "events").EventEmitter;
+var util = __webpack_require__(/*! util */ "util");
+
+var notifier = 'notify-send';
+var hasNotifier = void 0;
+
+module.exports = NotifySend;
+
+function NotifySend(options) {
+  options = utils.clone(options || {});
+  if (!(this instanceof NotifySend)) {
+    return new NotifySend(options);
+  }
+
+  this.options = options;
+
+  EventEmitter.call(this);
+}
+util.inherits(NotifySend, EventEmitter);
+
+function noop() {}
+NotifySend.prototype.notify = function(options, callback) {
+  options = utils.clone(options || {});
+  callback = callback || noop;
+
+  if (typeof callback !== 'function') {
+    throw new TypeError(
+      'The second argument must be a function callback. You have passed ' +
+        typeof callback
+    );
+  }
+
+  if (typeof options === 'string') {
+    options = { title: 'node-notifier', message: options };
+  }
+
+  if (!options.message) {
+    callback(new Error('Message is required.'));
+    return this;
+  }
+
+  if (os.type() !== 'Linux' && !os.type().match(/BSD$/)) {
+    callback(new Error('Only supported on Linux and *BSD systems'));
+    return this;
+  }
+
+  if (hasNotifier === false) {
+    callback(new Error('notify-send must be installed on the system.'));
+    return this;
+  }
+
+  if (hasNotifier || !!this.options.suppressOsdCheck) {
+    doNotification(options, callback);
+    return this;
+  }
+
+  try {
+    hasNotifier = !!which.sync(notifier);
+    doNotification(options, callback);
+  } catch (err) {
+    hasNotifier = false;
+    return callback(err);
+  }
+
+  return this;
+};
+
+var allowedArguments = ['urgency', 'expire-time', 'icon', 'category', 'hint'];
+
+function doNotification(options, callback) {
+  var initial, argsList;
+
+  options = utils.mapToNotifySend(options);
+  options.title = options.title || 'Node Notification:';
+
+  initial = [options.title, options.message];
+  delete options.title;
+  delete options.message;
+
+  argsList = utils.constructArgumentList(options, {
+    initial: initial,
+    keyExtra: '-',
+    allowedArguments: allowedArguments
+  });
+
+  utils.command(notifier, argsList, callback);
+}
+
 
 /***/ }),
 
@@ -239,7 +1785,108 @@ eval("/**\n * Node.js wrapper for \"notify-send\".\n */\nvar os = __webpack_requ
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("/* WEBPACK VAR INJECTION */(function(__dirname) {/**\n * Wrapper for the toaster (https://github.com/nels-o/toaster)\n */\nvar path = __webpack_require__(/*! path */ \"path\");\nvar notifier = path.resolve(__dirname, '../vendor/snoreToast/SnoreToast.exe');\nvar utils = __webpack_require__(/*! ../lib/utils */ \"./node_modules/node-notifier/lib/utils.js\");\nvar Balloon = __webpack_require__(/*! ./balloon */ \"./node_modules/node-notifier/notifiers/balloon.js\");\n\nvar EventEmitter = __webpack_require__(/*! events */ \"events\").EventEmitter;\nvar util = __webpack_require__(/*! util */ \"util\");\n\nvar fallback = void 0;\n\nmodule.exports = WindowsToaster;\n\nfunction WindowsToaster(options) {\n  options = utils.clone(options || {});\n  if (!(this instanceof WindowsToaster)) {\n    return new WindowsToaster(options);\n  }\n\n  this.options = options;\n\n  EventEmitter.call(this);\n}\nutil.inherits(WindowsToaster, EventEmitter);\n\nfunction noop() {}\n\nvar timeoutMessage = 'the toast has timed out';\nvar successMessage = 'user clicked on the toast';\n\nfunction hasText(str, txt) {\n  return str && str.indexOf(txt) !== -1;\n}\n\nWindowsToaster.prototype.notify = function(options, callback) {\n  options = utils.clone(options || {});\n  callback = callback || noop;\n\n  if (typeof options === 'string') {\n    options = { title: 'node-notifier', message: options };\n  }\n\n  if (typeof callback !== 'function') {\n    throw new TypeError(\n      'The second argument must be a function callback. You have passed ' +\n        typeof fn\n    );\n  }\n\n  var actionJackedCallback = utils.actionJackerDecorator(\n    this,\n    options,\n    function cb(err, data) {\n      // Needs to filter out timeout. Not an actual error.\n      if (err && hasText(data, timeoutMessage)) {\n        return callback(null, data);\n      }\n      callback(err, data);\n    },\n    function mapper(data) {\n      if (hasText(data, successMessage)) {\n        return 'click';\n      }\n      if (hasText(data, timeoutMessage)) {\n        return 'timeout';\n      }\n      return false;\n    }\n  );\n\n  options.title = options.title || 'Node Notification:';\n  if (\n    typeof options.message === 'undefined' &&\n    typeof options.close === 'undefined'\n  ) {\n    callback(new Error('Message or ID to close is required.'));\n    return this;\n  }\n\n  if (!utils.isWin8() && !!this.options.withFallback) {\n    fallback = fallback || new Balloon(this.options);\n    return fallback.notify(options, callback);\n  }\n\n  options = utils.mapToWin8(options);\n  var argsList = utils.constructArgumentList(options, {\n    explicitTrue: true,\n    wrapper: '',\n    keepNewlines: true,\n    noEscape: true\n  });\n  utils.fileCommand(\n    this.options.customPath || notifier,\n    argsList,\n    actionJackedCallback\n  );\n  return this;\n};\n\n/* WEBPACK VAR INJECTION */}.call(this, \"node_modules/node-notifier/notifiers\"))\n\n//# sourceURL=webpack:///./node_modules/node-notifier/notifiers/toaster.js?");
+/* WEBPACK VAR INJECTION */(function(__dirname) {/**
+ * Wrapper for the toaster (https://github.com/nels-o/toaster)
+ */
+var path = __webpack_require__(/*! path */ "path");
+var notifier = path.resolve(__dirname, '../vendor/snoreToast/SnoreToast.exe');
+var utils = __webpack_require__(/*! ../lib/utils */ "./node_modules/node-notifier/lib/utils.js");
+var Balloon = __webpack_require__(/*! ./balloon */ "./node_modules/node-notifier/notifiers/balloon.js");
+
+var EventEmitter = __webpack_require__(/*! events */ "events").EventEmitter;
+var util = __webpack_require__(/*! util */ "util");
+
+var fallback = void 0;
+
+module.exports = WindowsToaster;
+
+function WindowsToaster(options) {
+  options = utils.clone(options || {});
+  if (!(this instanceof WindowsToaster)) {
+    return new WindowsToaster(options);
+  }
+
+  this.options = options;
+
+  EventEmitter.call(this);
+}
+util.inherits(WindowsToaster, EventEmitter);
+
+function noop() {}
+
+var timeoutMessage = 'the toast has timed out';
+var successMessage = 'user clicked on the toast';
+
+function hasText(str, txt) {
+  return str && str.indexOf(txt) !== -1;
+}
+
+WindowsToaster.prototype.notify = function(options, callback) {
+  options = utils.clone(options || {});
+  callback = callback || noop;
+
+  if (typeof options === 'string') {
+    options = { title: 'node-notifier', message: options };
+  }
+
+  if (typeof callback !== 'function') {
+    throw new TypeError(
+      'The second argument must be a function callback. You have passed ' +
+        typeof fn
+    );
+  }
+
+  var actionJackedCallback = utils.actionJackerDecorator(
+    this,
+    options,
+    function cb(err, data) {
+      // Needs to filter out timeout. Not an actual error.
+      if (err && hasText(data, timeoutMessage)) {
+        return callback(null, data);
+      }
+      callback(err, data);
+    },
+    function mapper(data) {
+      if (hasText(data, successMessage)) {
+        return 'click';
+      }
+      if (hasText(data, timeoutMessage)) {
+        return 'timeout';
+      }
+      return false;
+    }
+  );
+
+  options.title = options.title || 'Node Notification:';
+  if (
+    typeof options.message === 'undefined' &&
+    typeof options.close === 'undefined'
+  ) {
+    callback(new Error('Message or ID to close is required.'));
+    return this;
+  }
+
+  if (!utils.isWin8() && !!this.options.withFallback) {
+    fallback = fallback || new Balloon(this.options);
+    return fallback.notify(options, callback);
+  }
+
+  options = utils.mapToWin8(options);
+  var argsList = utils.constructArgumentList(options, {
+    explicitTrue: true,
+    wrapper: '',
+    keepNewlines: true,
+    noEscape: true
+  });
+  utils.fileCommand(
+    this.options.customPath || notifier,
+    argsList,
+    actionJackedCallback
+  );
+  return this;
+};
+
+/* WEBPACK VAR INJECTION */}.call(this, "node_modules/node-notifier/notifiers"))
 
 /***/ }),
 
@@ -250,7 +1897,14 @@ eval("/* WEBPACK VAR INJECTION */(function(__dirname) {/**\n * Wrapper for the t
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("var ping = {};\n\nping.sys = __webpack_require__(/*! ./lib/ping-sys */ \"./node_modules/ping/lib/ping-sys.js\");\n//ping.pcap = require('./lib/ping-pcap');\nping.promise = __webpack_require__(/*! ./lib/ping-promise */ \"./node_modules/ping/lib/ping-promise.js\");\n\nmodule.exports = ping;\n\n\n//# sourceURL=webpack:///./node_modules/ping/index.js?");
+var ping = {};
+
+ping.sys = __webpack_require__(/*! ./lib/ping-sys */ "./node_modules/ping/lib/ping-sys.js");
+//ping.pcap = require('./lib/ping-pcap');
+ping.promise = __webpack_require__(/*! ./lib/ping-promise */ "./node_modules/ping/lib/ping-promise.js");
+
+module.exports = ping;
+
 
 /***/ }),
 
@@ -262,7 +1916,118 @@ eval("var ping = {};\n\nping.sys = __webpack_require__(/*! ./lib/ping-sys */ \".
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-eval("\n\nvar __ = __webpack_require__(/*! underscore */ \"./node_modules/underscore/underscore.js\");\nvar util = __webpack_require__(/*! util */ \"util\");\n\n// Our library\nvar linuxBuilder = __webpack_require__(/*! ./linux */ \"./node_modules/ping/lib/builder/linux.js\");\nvar macBuilder = __webpack_require__(/*! ./mac */ \"./node_modules/ping/lib/builder/mac.js\");\nvar winBuilder = __webpack_require__(/*! ./win */ \"./node_modules/ping/lib/builder/win.js\");\n\n/**\n * A factory creates argument builders for different platform\n * @constructor\n */\nfunction factory() {}\n\n/**\n * Check out linux platform\n */\nfactory.isLinux = function (p) {\n    var platforms = [\n        'aix',\n        'linux',\n    ];\n\n    return platforms.indexOf(p) >= 0;\n};\n\n/**\n * Check out macos platform\n */\nfactory.isMacOS = function (p) {\n    var platforms = [\n        'darwin',\n        'freebsd',\n    ];\n\n    return platforms.indexOf(p) >= 0;\n};\n\n/**\n * Check out window platform\n */\nfactory.isWindow = function (p) {\n    return p && p.match(/^win/) !== null;\n};\n\n/**\n * Check whether given platform is supported\n * @param {string} p - Name of the platform\n * @return {bool} - True or False\n */\nfactory.isPlatformSupport = function (p) {\n    return __.some([\n        this.isWindow(p),\n        this.isLinux(p),\n        this.isMacOS(p),\n    ]);\n};\n\n/**\n * Return a path to the ping executable in the system\n * @param {string} platform - Name of the platform\n * @return {object} - Argument builder\n * @throw if given platform is not supported\n */\nfactory.getExecutablePath = function (platform) {\n    if (!this.isPlatformSupport(platform)) {\n        throw new Error(util.format('Platform |%s| is not support', platform));\n    }\n\n    var ret = null;\n\n    if (platform === 'aix') {\n        ret = '/usr/sbin/ping';\n    } else if (factory.isLinux(platform)) {\n        ret = '/bin/ping';\n    } else if (factory.isWindow(platform)) {\n        ret = process.env.SystemRoot + '/system32/ping.exe';\n    } else if (factory.isMacOS(platform)) {\n        ret = '/sbin/ping';\n    }\n\n    return ret;\n};\n\n/**\n * Create a builder\n * @param {string} platform - Name of the platform\n * @return {object} - Argument builder\n * @throw if given platform is not supported\n */\nfactory.createBuilder = function (platform) {\n    if (!this.isPlatformSupport(platform)) {\n        throw new Error(util.format('Platform |%s| is not support', platform));\n    }\n\n    var ret = null;\n\n    if (factory.isLinux(platform)) {\n        ret = linuxBuilder;\n    } else if (factory.isWindow(platform)) {\n        ret = winBuilder;\n    } else if (factory.isMacOS(platform)) {\n        ret = macBuilder;\n    }\n\n    return ret;\n};\n\nmodule.exports = factory;\n\n\n//# sourceURL=webpack:///./node_modules/ping/lib/builder/factory.js?");
+
+
+var __ = __webpack_require__(/*! underscore */ "./node_modules/underscore/underscore.js");
+var util = __webpack_require__(/*! util */ "util");
+
+// Our library
+var linuxBuilder = __webpack_require__(/*! ./linux */ "./node_modules/ping/lib/builder/linux.js");
+var macBuilder = __webpack_require__(/*! ./mac */ "./node_modules/ping/lib/builder/mac.js");
+var winBuilder = __webpack_require__(/*! ./win */ "./node_modules/ping/lib/builder/win.js");
+
+/**
+ * A factory creates argument builders for different platform
+ * @constructor
+ */
+function factory() {}
+
+/**
+ * Check out linux platform
+ */
+factory.isLinux = function (p) {
+    var platforms = [
+        'aix',
+        'linux',
+    ];
+
+    return platforms.indexOf(p) >= 0;
+};
+
+/**
+ * Check out macos platform
+ */
+factory.isMacOS = function (p) {
+    var platforms = [
+        'darwin',
+        'freebsd',
+    ];
+
+    return platforms.indexOf(p) >= 0;
+};
+
+/**
+ * Check out window platform
+ */
+factory.isWindow = function (p) {
+    return p && p.match(/^win/) !== null;
+};
+
+/**
+ * Check whether given platform is supported
+ * @param {string} p - Name of the platform
+ * @return {bool} - True or False
+ */
+factory.isPlatformSupport = function (p) {
+    return __.some([
+        this.isWindow(p),
+        this.isLinux(p),
+        this.isMacOS(p),
+    ]);
+};
+
+/**
+ * Return a path to the ping executable in the system
+ * @param {string} platform - Name of the platform
+ * @return {object} - Argument builder
+ * @throw if given platform is not supported
+ */
+factory.getExecutablePath = function (platform) {
+    if (!this.isPlatformSupport(platform)) {
+        throw new Error(util.format('Platform |%s| is not support', platform));
+    }
+
+    var ret = null;
+
+    if (platform === 'aix') {
+        ret = '/usr/sbin/ping';
+    } else if (factory.isLinux(platform)) {
+        ret = '/bin/ping';
+    } else if (factory.isWindow(platform)) {
+        ret = process.env.SystemRoot + '/system32/ping.exe';
+    } else if (factory.isMacOS(platform)) {
+        ret = '/sbin/ping';
+    }
+
+    return ret;
+};
+
+/**
+ * Create a builder
+ * @param {string} platform - Name of the platform
+ * @return {object} - Argument builder
+ * @throw if given platform is not supported
+ */
+factory.createBuilder = function (platform) {
+    if (!this.isPlatformSupport(platform)) {
+        throw new Error(util.format('Platform |%s| is not support', platform));
+    }
+
+    var ret = null;
+
+    if (factory.isLinux(platform)) {
+        ret = linuxBuilder;
+    } else if (factory.isWindow(platform)) {
+        ret = winBuilder;
+    } else if (factory.isMacOS(platform)) {
+        ret = macBuilder;
+    }
+
+    return ret;
+};
+
+module.exports = factory;
+
 
 /***/ }),
 
@@ -274,7 +2039,82 @@ eval("\n\nvar __ = __webpack_require__(/*! underscore */ \"./node_modules/unders
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-eval("\n\n/**\n * A builder builds command line arguments for ping in linux environment\n * @module lib/builder/linux\n */\nvar util = __webpack_require__(/*! util */ \"util\");\n\nvar builder = {};\n\n/**\n * Cross platform config representation\n * @typedef {Object} PingConfig\n * @property {boolean} numeric - Map IP address to hostname or not\n * @property {number} timeout - Time duration for ping command to exit\n * @property {number} min_reply - Exit after sending number of ECHO_REQUEST\n * @property {string[]} extra - Optional options does not provided\n */\n\nvar defaultConfig = {\n    numeric: true,\n    timeout: 2,\n    min_reply: 1,\n    extra: [],\n};\n\n/**\n * Get the finalized array of command line arguments\n * @param {string} target - hostname or ip address\n * @param {PingConfig} [config] - Configuration object for cmd line argument\n * @return {string[]} - Command line argument according to the configuration\n */\nbuilder.getResult = function (target, config) {\n    var _config = config || {};\n\n    // Empty argument\n    var ret = [];\n\n    // Make every key in config has been setup properly\n    var keys = ['numeric', 'timeout', 'min_reply', 'extra'];\n    keys.forEach(function (k) {\n        // Falsy value will be overrided without below checking\n        if (typeof(_config[k]) !== 'boolean') {\n            _config[k] = _config[k] || defaultConfig[k];\n        }\n    });\n\n    if (_config.numeric) {\n        ret.push('-n');\n    }\n\n    if (_config.timeout) {\n        ret = ret.concat([\n            '-w',\n            util.format('%d', _config.timeout),\n        ]);\n    }\n\n    if (_config.min_reply) {\n        ret = ret.concat([\n            '-c',\n            util.format('%d', _config.min_reply),\n        ]);\n    }\n\n    if (_config.extra) {\n        ret = ret.concat(_config.extra);\n    }\n\n    ret.push(target);\n\n    return ret;\n};\n\nmodule.exports = builder;\n\n\n//# sourceURL=webpack:///./node_modules/ping/lib/builder/linux.js?");
+
+
+/**
+ * A builder builds command line arguments for ping in linux environment
+ * @module lib/builder/linux
+ */
+var util = __webpack_require__(/*! util */ "util");
+
+var builder = {};
+
+/**
+ * Cross platform config representation
+ * @typedef {Object} PingConfig
+ * @property {boolean} numeric - Map IP address to hostname or not
+ * @property {number} timeout - Time duration for ping command to exit
+ * @property {number} min_reply - Exit after sending number of ECHO_REQUEST
+ * @property {string[]} extra - Optional options does not provided
+ */
+
+var defaultConfig = {
+    numeric: true,
+    timeout: 2,
+    min_reply: 1,
+    extra: [],
+};
+
+/**
+ * Get the finalized array of command line arguments
+ * @param {string} target - hostname or ip address
+ * @param {PingConfig} [config] - Configuration object for cmd line argument
+ * @return {string[]} - Command line argument according to the configuration
+ */
+builder.getResult = function (target, config) {
+    var _config = config || {};
+
+    // Empty argument
+    var ret = [];
+
+    // Make every key in config has been setup properly
+    var keys = ['numeric', 'timeout', 'min_reply', 'extra'];
+    keys.forEach(function (k) {
+        // Falsy value will be overrided without below checking
+        if (typeof(_config[k]) !== 'boolean') {
+            _config[k] = _config[k] || defaultConfig[k];
+        }
+    });
+
+    if (_config.numeric) {
+        ret.push('-n');
+    }
+
+    if (_config.timeout) {
+        ret = ret.concat([
+            '-w',
+            util.format('%d', _config.timeout),
+        ]);
+    }
+
+    if (_config.min_reply) {
+        ret = ret.concat([
+            '-c',
+            util.format('%d', _config.min_reply),
+        ]);
+    }
+
+    if (_config.extra) {
+        ret = ret.concat(_config.extra);
+    }
+
+    ret.push(target);
+
+    return ret;
+};
+
+module.exports = builder;
+
 
 /***/ }),
 
@@ -286,7 +2126,82 @@ eval("\n\n/**\n * A builder builds command line arguments for ping in linux envi
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-eval("\n\n/**\n * A builder builds command line arguments for ping in mac environment\n * @module lib/builder/mac\n */\nvar util = __webpack_require__(/*! util */ \"util\");\n\nvar builder = {};\n\n/**\n * Cross platform config representation\n * @typedef {Object} PingConfig\n * @property {boolean} numeric - Map IP address to hostname or not\n * @property {number} timeout - Time duration for ping command to exit\n * @property {number} min_reply - Exit after sending number of ECHO_REQUEST\n * @property {string[]} extra - Optional options does not provided\n */\n\nvar defaultConfig = {\n    numeric: true,\n    timeout: 2,\n    min_reply: 1,\n    extra: [],\n};\n\n/**\n * Get the finalized array of command line arguments\n * @param {string} target - hostname or ip address\n * @param {PingConfig} [config] - Configuration object for cmd line argument\n * @return {string[]} - Command line argument according to the configuration\n */\nbuilder.getResult = function (target, config) {\n    var _config = config || {};\n\n    // Empty argument\n    var ret = [];\n\n    // Make every key in config has been setup properly\n    var keys = ['numeric', 'timeout', 'min_reply', 'extra'];\n    keys.forEach(function (k) {\n        // Falsy value will be overrided without below checking\n        if (typeof(_config[k]) !== 'boolean') {\n            _config[k] = _config[k] || defaultConfig[k];\n        }\n    });\n\n    if (_config.numeric) {\n        ret.push('-n');\n    }\n\n    if (_config.timeout) {\n        ret = ret.concat([\n            '-t',\n            util.format('%d', _config.timeout),\n        ]);\n    }\n\n    if (_config.min_reply) {\n        ret = ret.concat([\n            '-c',\n            util.format('%d', _config.min_reply),\n        ]);\n    }\n\n    if (_config.extra) {\n        ret = ret.concat(_config.extra);\n    }\n\n    ret.push(target);\n\n    return ret;\n};\n\nmodule.exports = builder;\n\n\n//# sourceURL=webpack:///./node_modules/ping/lib/builder/mac.js?");
+
+
+/**
+ * A builder builds command line arguments for ping in mac environment
+ * @module lib/builder/mac
+ */
+var util = __webpack_require__(/*! util */ "util");
+
+var builder = {};
+
+/**
+ * Cross platform config representation
+ * @typedef {Object} PingConfig
+ * @property {boolean} numeric - Map IP address to hostname or not
+ * @property {number} timeout - Time duration for ping command to exit
+ * @property {number} min_reply - Exit after sending number of ECHO_REQUEST
+ * @property {string[]} extra - Optional options does not provided
+ */
+
+var defaultConfig = {
+    numeric: true,
+    timeout: 2,
+    min_reply: 1,
+    extra: [],
+};
+
+/**
+ * Get the finalized array of command line arguments
+ * @param {string} target - hostname or ip address
+ * @param {PingConfig} [config] - Configuration object for cmd line argument
+ * @return {string[]} - Command line argument according to the configuration
+ */
+builder.getResult = function (target, config) {
+    var _config = config || {};
+
+    // Empty argument
+    var ret = [];
+
+    // Make every key in config has been setup properly
+    var keys = ['numeric', 'timeout', 'min_reply', 'extra'];
+    keys.forEach(function (k) {
+        // Falsy value will be overrided without below checking
+        if (typeof(_config[k]) !== 'boolean') {
+            _config[k] = _config[k] || defaultConfig[k];
+        }
+    });
+
+    if (_config.numeric) {
+        ret.push('-n');
+    }
+
+    if (_config.timeout) {
+        ret = ret.concat([
+            '-t',
+            util.format('%d', _config.timeout),
+        ]);
+    }
+
+    if (_config.min_reply) {
+        ret = ret.concat([
+            '-c',
+            util.format('%d', _config.min_reply),
+        ]);
+    }
+
+    if (_config.extra) {
+        ret = ret.concat(_config.extra);
+    }
+
+    ret.push(target);
+
+    return ret;
+};
+
+module.exports = builder;
+
 
 /***/ }),
 
@@ -298,7 +2213,85 @@ eval("\n\n/**\n * A builder builds command line arguments for ping in mac enviro
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-eval("\n\n/**\n * A builder builds command line arguments for ping in window environment\n * @module lib/builder/win\n */\nvar util = __webpack_require__(/*! util */ \"util\");\n\nvar builder = {};\n\n/**\n * Cross platform config representation\n * @typedef {Object} PingConfig\n * @property {boolean} numeric - Map IP address to hostname or not\n * @property {number} timeout - Time duration for ping command to exit\n * @property {number} min_reply - Exit after sending number of ECHO_REQUEST\n * @property {string[]} extra - Optional options does not provided\n */\n\nvar defaultConfig = {\n    numeric: true,\n    timeout: 5,\n    min_reply: 1,\n    extra: [],\n};\n\n/**\n * Get the finalized array of command line arguments\n * @param {string} target - hostname or ip address\n * @param {PingConfig} [config] - Configuration object for cmd line argument\n * @return {string[]} - Command line argument according to the configuration\n */\nbuilder.getResult = function (target, config) {\n    var _config = config || {};\n\n    // Empty argument\n    var ret = [];\n\n    // Make every key in config has been setup properly\n    var keys = ['numeric', 'timeout', 'min_reply', 'extra'];\n    keys.forEach(function (k) {\n        // Falsy value will be overrided without below checking\n        if (typeof(_config[k]) !== 'boolean') {\n            _config[k] = _config[k] || defaultConfig[k];\n        }\n    });\n\n    if (!_config.numeric) {\n        ret.push('-a');\n    }\n\n    if (_config.timeout) {\n        // refs #56: Unit problem\n        // Our timeout is in second while timeout in window is in milliseconds\n        // so we need to convert our units accordingly\n        ret = ret.concat([\n            '-w',\n            util.format('%d', _config.timeout * 1000),\n        ]);\n    }\n\n    if (_config.min_reply) {\n        ret = ret.concat([\n            '-n',\n            util.format('%d', _config.min_reply),\n        ]);\n    }\n\n    if (_config.extra) {\n        ret = ret.concat(_config.extra);\n    }\n\n    ret.push(target);\n\n    return ret;\n};\n\nmodule.exports = builder;\n\n\n//# sourceURL=webpack:///./node_modules/ping/lib/builder/win.js?");
+
+
+/**
+ * A builder builds command line arguments for ping in window environment
+ * @module lib/builder/win
+ */
+var util = __webpack_require__(/*! util */ "util");
+
+var builder = {};
+
+/**
+ * Cross platform config representation
+ * @typedef {Object} PingConfig
+ * @property {boolean} numeric - Map IP address to hostname or not
+ * @property {number} timeout - Time duration for ping command to exit
+ * @property {number} min_reply - Exit after sending number of ECHO_REQUEST
+ * @property {string[]} extra - Optional options does not provided
+ */
+
+var defaultConfig = {
+    numeric: true,
+    timeout: 5,
+    min_reply: 1,
+    extra: [],
+};
+
+/**
+ * Get the finalized array of command line arguments
+ * @param {string} target - hostname or ip address
+ * @param {PingConfig} [config] - Configuration object for cmd line argument
+ * @return {string[]} - Command line argument according to the configuration
+ */
+builder.getResult = function (target, config) {
+    var _config = config || {};
+
+    // Empty argument
+    var ret = [];
+
+    // Make every key in config has been setup properly
+    var keys = ['numeric', 'timeout', 'min_reply', 'extra'];
+    keys.forEach(function (k) {
+        // Falsy value will be overrided without below checking
+        if (typeof(_config[k]) !== 'boolean') {
+            _config[k] = _config[k] || defaultConfig[k];
+        }
+    });
+
+    if (!_config.numeric) {
+        ret.push('-a');
+    }
+
+    if (_config.timeout) {
+        // refs #56: Unit problem
+        // Our timeout is in second while timeout in window is in milliseconds
+        // so we need to convert our units accordingly
+        ret = ret.concat([
+            '-w',
+            util.format('%d', _config.timeout * 1000),
+        ]);
+    }
+
+    if (_config.min_reply) {
+        ret = ret.concat([
+            '-n',
+            util.format('%d', _config.min_reply),
+        ]);
+    }
+
+    if (_config.extra) {
+        ret = ret.concat(_config.extra);
+    }
+
+    ret.push(target);
+
+    return ret;
+};
+
+module.exports = builder;
+
 
 /***/ }),
 
@@ -310,7 +2303,188 @@ eval("\n\n/**\n * A builder builds command line arguments for ping in window env
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-eval("\n\n/* eslint no-unused-vars: 0 */\n\nvar __ = __webpack_require__(/*! underscore */ \"./node_modules/underscore/underscore.js\");\n\n/**\n * Parsed response\n * @typedef {object} PingResponse\n * @param {string} host - The input IP address or HOST\n * @param {string} numeric_host - Target IP address\n * @param {boolean} alive - True for existed host\n * @param {string} output - Raw stdout from system ping\n * @param {number} time - Time (float) in ms for first successful ping response\n * @param {string} min - Minimum time for collection records\n * @param {string} max - Maximum time for collection records\n * @param {string} avg - Average time for collection records\n * @param {string} stddev - Standard deviation time for collected records\n */\n\n/**\n * @constructor\n */\nfunction parser() {\n    // Initial state is 0\n    this._state = 0;\n\n    // Initial cache value\n    this._response = {\n        host: 'unknown',\n        alive: false,\n        output: 'unknown',\n        time: 'unknown',\n        min: 'unknown',\n        max: 'unknown',\n        avg: 'unknown',\n        stddev: 'unknown',\n    };\n\n    // Initial times storage for ping time\n    this._times = [];\n\n    // Initial lines storage for ping output\n    this._lines = [];\n\n    // strip string regexp\n    this._stripRegex = /[ ]*\\r?\\n?$/g;\n}\n\n/**\n * Enum for parser states\n * @readonly\n * @enum {number}\n */\nparser.prototype.STATES = {\n    INIT: 0,\n    HEADER: 1,\n    BODY: 2,\n    FOOTER: 3,\n    END: 4,\n};\n\n/**\n * Change state of this parser\n * @param {number} state - parser.STATES\n * @return {this} - This instance\n */\nparser.prototype._changeState = function (state) {\n    var states = __.values(this.STATES);\n    if (states.indexOf(state) < 0) {\n        throw new Error('Unknown state');\n    }\n\n    this._state = state;\n\n    return this;\n};\n\n/**\n * Process output's header\n * @param {string} line - A line from system ping\n */\nparser.prototype._processHeader = function (line) {\n    throw new Error('Subclass should implement this method');\n};\n\n/**\n * Process output's body\n * @param {string} line - A line from system ping\n */\nparser.prototype._processBody = function (line) {\n    throw new Error('Subclass should implement this method');\n};\n\n/**\n * Process output's footer\n * @param {string} line - A line from system ping\n */\nparser.prototype._processFooter = function (line) {\n    throw new Error('Subclass should implement this method');\n};\n\n/**\n * Process a line from system ping\n * @param {string} line - A line from system ping\n * @return {this} - This instance\n */\nparser.prototype.eat = function (line) {\n    var headerStates = [\n        this.STATES.INIT,\n        this.STATES.HEADER,\n    ];\n\n    // Store lines\n    this._lines.push(line);\n\n    // Strip all space \\r\\n at the end\n    var _line = line.replace(this._stripRegex, '');\n\n    if (_line.length === 0) {\n        // Do nothing if this is an empty line\n    } else if (headerStates.indexOf(this._state) >= 0) {\n        this._processHeader(_line);\n    } else if (this._state === this.STATES.BODY) {\n        this._processBody(_line);\n    } else if (this._state === this.STATES.FOOTER) {\n        this._processFooter(_line);\n    } else if (this._state === this.STATES.END) {\n        // Do nothing\n    } else {\n        throw new Error('Unknown state');\n    }\n\n    return this;\n};\n\n/**\n * Get results after parsing certain lines from system ping\n * @return {PingResponse} - Response from parsing ping output\n */\nparser.prototype.getResult = function () {\n    var ret = __.extend({}, this._response);\n\n    // Concat output\n    ret.output = this._lines.join('\\n');\n\n    // Determine alive\n    ret.alive = this._times.length > 0;\n\n    // Update time at first successful line\n    if (ret.alive) {\n        ret.time = this._response.time = this._times[0];\n    }\n\n    // Get stddev\n    if (\n        ret.stddev === 'unknown' && ret.alive\n    ) {\n        var N = this._times.length;\n\n        var variances = __.reduce(this._times, function (m, time) {\n            return m + Math.pow((time - ret.avg), 2);\n        }, 0) / N;\n\n        ret.stddev = Math.round(\n            Math.sqrt(variances) * 1000\n        ) / 1000;\n    }\n\n    // Fix min, avg, max, stddev up to 3 decimal points\n    __.each(['min', 'avg', 'max', 'stddev'], function (key) {\n        var v = ret[key];\n        if (__.isNumber(v)) {\n            ret[key] = v.toFixed(3);\n        }\n    });\n\n    return ret;\n};\n\nmodule.exports = parser;\n\n\n//# sourceURL=webpack:///./node_modules/ping/lib/parser/base.js?");
+
+
+/* eslint no-unused-vars: 0 */
+
+var __ = __webpack_require__(/*! underscore */ "./node_modules/underscore/underscore.js");
+
+/**
+ * Parsed response
+ * @typedef {object} PingResponse
+ * @param {string} host - The input IP address or HOST
+ * @param {string} numeric_host - Target IP address
+ * @param {boolean} alive - True for existed host
+ * @param {string} output - Raw stdout from system ping
+ * @param {number} time - Time (float) in ms for first successful ping response
+ * @param {string} min - Minimum time for collection records
+ * @param {string} max - Maximum time for collection records
+ * @param {string} avg - Average time for collection records
+ * @param {string} stddev - Standard deviation time for collected records
+ */
+
+/**
+ * @constructor
+ */
+function parser() {
+    // Initial state is 0
+    this._state = 0;
+
+    // Initial cache value
+    this._response = {
+        host: 'unknown',
+        alive: false,
+        output: 'unknown',
+        time: 'unknown',
+        min: 'unknown',
+        max: 'unknown',
+        avg: 'unknown',
+        stddev: 'unknown',
+    };
+
+    // Initial times storage for ping time
+    this._times = [];
+
+    // Initial lines storage for ping output
+    this._lines = [];
+
+    // strip string regexp
+    this._stripRegex = /[ ]*\r?\n?$/g;
+}
+
+/**
+ * Enum for parser states
+ * @readonly
+ * @enum {number}
+ */
+parser.prototype.STATES = {
+    INIT: 0,
+    HEADER: 1,
+    BODY: 2,
+    FOOTER: 3,
+    END: 4,
+};
+
+/**
+ * Change state of this parser
+ * @param {number} state - parser.STATES
+ * @return {this} - This instance
+ */
+parser.prototype._changeState = function (state) {
+    var states = __.values(this.STATES);
+    if (states.indexOf(state) < 0) {
+        throw new Error('Unknown state');
+    }
+
+    this._state = state;
+
+    return this;
+};
+
+/**
+ * Process output's header
+ * @param {string} line - A line from system ping
+ */
+parser.prototype._processHeader = function (line) {
+    throw new Error('Subclass should implement this method');
+};
+
+/**
+ * Process output's body
+ * @param {string} line - A line from system ping
+ */
+parser.prototype._processBody = function (line) {
+    throw new Error('Subclass should implement this method');
+};
+
+/**
+ * Process output's footer
+ * @param {string} line - A line from system ping
+ */
+parser.prototype._processFooter = function (line) {
+    throw new Error('Subclass should implement this method');
+};
+
+/**
+ * Process a line from system ping
+ * @param {string} line - A line from system ping
+ * @return {this} - This instance
+ */
+parser.prototype.eat = function (line) {
+    var headerStates = [
+        this.STATES.INIT,
+        this.STATES.HEADER,
+    ];
+
+    // Store lines
+    this._lines.push(line);
+
+    // Strip all space \r\n at the end
+    var _line = line.replace(this._stripRegex, '');
+
+    if (_line.length === 0) {
+        // Do nothing if this is an empty line
+    } else if (headerStates.indexOf(this._state) >= 0) {
+        this._processHeader(_line);
+    } else if (this._state === this.STATES.BODY) {
+        this._processBody(_line);
+    } else if (this._state === this.STATES.FOOTER) {
+        this._processFooter(_line);
+    } else if (this._state === this.STATES.END) {
+        // Do nothing
+    } else {
+        throw new Error('Unknown state');
+    }
+
+    return this;
+};
+
+/**
+ * Get results after parsing certain lines from system ping
+ * @return {PingResponse} - Response from parsing ping output
+ */
+parser.prototype.getResult = function () {
+    var ret = __.extend({}, this._response);
+
+    // Concat output
+    ret.output = this._lines.join('\n');
+
+    // Determine alive
+    ret.alive = this._times.length > 0;
+
+    // Update time at first successful line
+    if (ret.alive) {
+        ret.time = this._response.time = this._times[0];
+    }
+
+    // Get stddev
+    if (
+        ret.stddev === 'unknown' && ret.alive
+    ) {
+        var N = this._times.length;
+
+        var variances = __.reduce(this._times, function (m, time) {
+            return m + Math.pow((time - ret.avg), 2);
+        }, 0) / N;
+
+        ret.stddev = Math.round(
+            Math.sqrt(variances) * 1000
+        ) / 1000;
+    }
+
+    // Fix min, avg, max, stddev up to 3 decimal points
+    __.each(['min', 'avg', 'max', 'stddev'], function (key) {
+        var v = ret[key];
+        if (__.isNumber(v)) {
+            ret[key] = v.toFixed(3);
+        }
+    });
+
+    return ret;
+};
+
+module.exports = parser;
+
 
 /***/ }),
 
@@ -322,7 +2496,46 @@ eval("\n\n/* eslint no-unused-vars: 0 */\n\nvar __ = __webpack_require__(/*! und
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-eval("\n\nvar util = __webpack_require__(/*! util */ \"util\");\n\nvar builderFactory = __webpack_require__(/*! ../builder/factory */ \"./node_modules/ping/lib/builder/factory.js\");\nvar WinParser = __webpack_require__(/*! ./win */ \"./node_modules/ping/lib/parser/win.js\");\nvar MacParser = __webpack_require__(/*! ./mac */ \"./node_modules/ping/lib/parser/mac.js\");\nvar LinuxParser = __webpack_require__(/*! ./linux */ \"./node_modules/ping/lib/parser/linux.js\");\n\n/**\n * A factory creates a parser for parsing output from system ping\n * @constructor\n */\nfunction factory() {}\n\n/**\n * Create a parser for a given platform\n * @param {string} platform - Name of the platform\n * @return {object} - Parser\n * @throw if given platform is not supported\n */\nfactory.createParser = function (platform) {\n    if (!builderFactory.isPlatformSupport(platform)) {\n        throw new Error(util.format('Platform |%s| is not support', platform));\n    }\n\n    var ret = null;\n    if (builderFactory.isWindow(platform)) {\n        ret = new WinParser();\n    } else if (builderFactory.isMacOS(platform)) {\n        ret = new MacParser();\n    } else if (builderFactory.isLinux(platform)) {\n        ret = new LinuxParser();\n    }\n\n    return ret;\n};\n\nmodule.exports = factory;\n\n\n//# sourceURL=webpack:///./node_modules/ping/lib/parser/factory.js?");
+
+
+var util = __webpack_require__(/*! util */ "util");
+
+var builderFactory = __webpack_require__(/*! ../builder/factory */ "./node_modules/ping/lib/builder/factory.js");
+var WinParser = __webpack_require__(/*! ./win */ "./node_modules/ping/lib/parser/win.js");
+var MacParser = __webpack_require__(/*! ./mac */ "./node_modules/ping/lib/parser/mac.js");
+var LinuxParser = __webpack_require__(/*! ./linux */ "./node_modules/ping/lib/parser/linux.js");
+
+/**
+ * A factory creates a parser for parsing output from system ping
+ * @constructor
+ */
+function factory() {}
+
+/**
+ * Create a parser for a given platform
+ * @param {string} platform - Name of the platform
+ * @return {object} - Parser
+ * @throw if given platform is not supported
+ */
+factory.createParser = function (platform) {
+    if (!builderFactory.isPlatformSupport(platform)) {
+        throw new Error(util.format('Platform |%s| is not support', platform));
+    }
+
+    var ret = null;
+    if (builderFactory.isWindow(platform)) {
+        ret = new WinParser();
+    } else if (builderFactory.isMacOS(platform)) {
+        ret = new MacParser();
+    } else if (builderFactory.isLinux(platform)) {
+        ret = new LinuxParser();
+    }
+
+    return ret;
+};
+
+module.exports = factory;
+
 
 /***/ }),
 
@@ -334,7 +2547,55 @@ eval("\n\nvar util = __webpack_require__(/*! util */ \"util\");\n\nvar builderFa
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-eval("\n\nvar util = __webpack_require__(/*! util */ \"util\");\nvar base = __webpack_require__(/*! ./base */ \"./node_modules/ping/lib/parser/base.js\");\nvar MacParser = __webpack_require__(/*! ./mac */ \"./node_modules/ping/lib/parser/mac.js\");\n\n/**\n * @constructor\n */\nfunction LinuxParser() {\n    base.call(this);\n}\n\nutil.inherits(LinuxParser, base);\n\n/**\n * Process output's body\n * @param {string} line - A line from system ping\n */\nLinuxParser.prototype._processHeader = function (line) {\n    // Get host and numeric_host\n    var tokens = line.split(' ');\n\n    this._response.host = tokens[1];\n    this._response.numeric_host = tokens[2].slice(1, -1);\n\n    this._changeState(this.STATES.BODY);\n};\n\n/**\n * Process output's body\n * @param {string} line - A line from system ping\n */\nLinuxParser.prototype._processBody = function (line) {\n    // Reuse mac parser implementation\n    MacParser.prototype._processBody.call(this, line);\n};\n\n/**\n * Process output's footer\n * @param {string} line - A line from system ping\n */\nLinuxParser.prototype._processFooter = function (line) {\n    // Reuse mac parser implementation\n    MacParser.prototype._processFooter.call(this, line);\n};\n\nmodule.exports = LinuxParser;\n\n\n//# sourceURL=webpack:///./node_modules/ping/lib/parser/linux.js?");
+
+
+var util = __webpack_require__(/*! util */ "util");
+var base = __webpack_require__(/*! ./base */ "./node_modules/ping/lib/parser/base.js");
+var MacParser = __webpack_require__(/*! ./mac */ "./node_modules/ping/lib/parser/mac.js");
+
+/**
+ * @constructor
+ */
+function LinuxParser() {
+    base.call(this);
+}
+
+util.inherits(LinuxParser, base);
+
+/**
+ * Process output's body
+ * @param {string} line - A line from system ping
+ */
+LinuxParser.prototype._processHeader = function (line) {
+    // Get host and numeric_host
+    var tokens = line.split(' ');
+
+    this._response.host = tokens[1];
+    this._response.numeric_host = tokens[2].slice(1, -1);
+
+    this._changeState(this.STATES.BODY);
+};
+
+/**
+ * Process output's body
+ * @param {string} line - A line from system ping
+ */
+LinuxParser.prototype._processBody = function (line) {
+    // Reuse mac parser implementation
+    MacParser.prototype._processBody.call(this, line);
+};
+
+/**
+ * Process output's footer
+ * @param {string} line - A line from system ping
+ */
+LinuxParser.prototype._processFooter = function (line) {
+    // Reuse mac parser implementation
+    MacParser.prototype._processFooter.call(this, line);
+};
+
+module.exports = LinuxParser;
+
 
 /***/ }),
 
@@ -346,7 +2607,84 @@ eval("\n\nvar util = __webpack_require__(/*! util */ \"util\");\nvar base = __we
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-eval("\n\nvar util = __webpack_require__(/*! util */ \"util\");\nvar __ = __webpack_require__(/*! underscore */ \"./node_modules/underscore/underscore.js\");\n\nvar base = __webpack_require__(/*! ./base */ \"./node_modules/ping/lib/parser/base.js\");\n\n/**\n * @constructor\n */\nfunction MacParser() {\n    base.call(this);\n}\n\nutil.inherits(MacParser, base);\n\n/**\n * Process output's header\n * @param {string} line - A line from system ping\n */\nMacParser.prototype._processHeader = function (line) {\n    // Get host and numeric_host\n    var tokens = line.split(' ');\n\n    this._response.host = tokens[1];\n    this._response.numeric_host = tokens[2].slice(1, -2);\n\n    this._changeState(this.STATES.BODY);\n};\n\n/**\n * Process output's body\n * @param {string} line - A line from system ping\n */\nMacParser.prototype._processBody = function (line) {\n    // XXX: Assume there is at least 3 '=' can be found\n    var count = (line.match(/=/g) || []).length;\n    if (count >= 3) {\n        var regExp = /([0-9\\.]+)[ ]*ms/;\n        var match = regExp.exec(line);\n        this._times.push(parseFloat(match[1], 10));\n    }\n\n    // Change state if it see a '---'\n    if (line.indexOf('---') >= 0) {\n        this._changeState(this.STATES.FOOTER);\n    }\n};\n\n/**\n * Process output's footer\n * @param {string} line - A line from system ping\n */\nMacParser.prototype._processFooter = function (line) {\n    // XXX: Assume number of keywords '/' more than 3\n    var count = (line.match(/[\\/]/g) || []).length;\n    if (count >= 3) {\n        var regExp = /([0-9\\.]+)/g;\n        // XXX: Assume min avg max stddev\n        var m1 = regExp.exec(line);\n        var m2 = regExp.exec(line);\n        var m3 = regExp.exec(line);\n        var m4 = regExp.exec(line);\n\n        if (__.all([m1, m2, m3, m4])) {\n            this._response.min = parseFloat(m1[1], 10);\n            this._response.avg = parseFloat(m2[1], 10);\n            this._response.max = parseFloat(m3[1], 10);\n            this._response.stddev = parseFloat(m4[1], 10);\n            this._changeState(this.STATES.END);\n        }\n\n        this._changeState(this.STATES.END);\n    }\n};\n\nmodule.exports = MacParser;\n\n\n//# sourceURL=webpack:///./node_modules/ping/lib/parser/mac.js?");
+
+
+var util = __webpack_require__(/*! util */ "util");
+var __ = __webpack_require__(/*! underscore */ "./node_modules/underscore/underscore.js");
+
+var base = __webpack_require__(/*! ./base */ "./node_modules/ping/lib/parser/base.js");
+
+/**
+ * @constructor
+ */
+function MacParser() {
+    base.call(this);
+}
+
+util.inherits(MacParser, base);
+
+/**
+ * Process output's header
+ * @param {string} line - A line from system ping
+ */
+MacParser.prototype._processHeader = function (line) {
+    // Get host and numeric_host
+    var tokens = line.split(' ');
+
+    this._response.host = tokens[1];
+    this._response.numeric_host = tokens[2].slice(1, -2);
+
+    this._changeState(this.STATES.BODY);
+};
+
+/**
+ * Process output's body
+ * @param {string} line - A line from system ping
+ */
+MacParser.prototype._processBody = function (line) {
+    // XXX: Assume there is at least 3 '=' can be found
+    var count = (line.match(/=/g) || []).length;
+    if (count >= 3) {
+        var regExp = /([0-9\.]+)[ ]*ms/;
+        var match = regExp.exec(line);
+        this._times.push(parseFloat(match[1], 10));
+    }
+
+    // Change state if it see a '---'
+    if (line.indexOf('---') >= 0) {
+        this._changeState(this.STATES.FOOTER);
+    }
+};
+
+/**
+ * Process output's footer
+ * @param {string} line - A line from system ping
+ */
+MacParser.prototype._processFooter = function (line) {
+    // XXX: Assume number of keywords '/' more than 3
+    var count = (line.match(/[\/]/g) || []).length;
+    if (count >= 3) {
+        var regExp = /([0-9\.]+)/g;
+        // XXX: Assume min avg max stddev
+        var m1 = regExp.exec(line);
+        var m2 = regExp.exec(line);
+        var m3 = regExp.exec(line);
+        var m4 = regExp.exec(line);
+
+        if (__.all([m1, m2, m3, m4])) {
+            this._response.min = parseFloat(m1[1], 10);
+            this._response.avg = parseFloat(m2[1], 10);
+            this._response.max = parseFloat(m3[1], 10);
+            this._response.stddev = parseFloat(m4[1], 10);
+            this._changeState(this.STATES.END);
+        }
+
+        this._changeState(this.STATES.END);
+    }
+};
+
+module.exports = MacParser;
+
 
 /***/ }),
 
@@ -358,7 +2696,94 @@ eval("\n\nvar util = __webpack_require__(/*! util */ \"util\");\nvar __ = __webp
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-eval("\n\nvar util = __webpack_require__(/*! util */ \"util\");\nvar __ = __webpack_require__(/*! underscore */ \"./node_modules/underscore/underscore.js\");\n\nvar base = __webpack_require__(/*! ./base */ \"./node_modules/ping/lib/parser/base.js\");\n\n/**\n * @constructor\n */\nfunction WinParser() {\n    base.call(this);\n    this._ipv4Regex = /^([0-9]{1,3}\\.){3}[0-9]{1,3}$/;\n}\n\nutil.inherits(WinParser, base);\n\n/**\n * Process output's header\n * @param {string} line - A line from system ping\n */\nWinParser.prototype._processHeader = function (line) {\n    // Get host and numeric_host\n    var tokens = line.split(' ');\n\n    this._response.host = tokens[1];\n    if (this._ipv4Regex.test(this._response.host)) {\n        this._response.numeric_host = tokens[1];\n    } else {\n        this._response.numeric_host = tokens[2].slice(1, -1);\n    }\n\n    this._changeState(this.STATES.BODY);\n};\n\n/**\n * Process output's body\n * @param {string} line - A line from system ping\n */\nWinParser.prototype._processBody = function (line) {\n    var tokens = line.split(' ');\n    var kvps = __.filter(tokens, function (token) {\n        // Sometime it shows <1ms\n        return token.indexOf('=') >= 0 || token.indexOf('<') >= 0;\n    });\n\n    // kvps.length >= 3 means target is pingable\n    if (kvps.length >= 3) {\n        // XXX: Assume time will alaways get keyword ms for all language\n        var timeKVP = __.find(kvps, function (kvp) {\n            return kvp.indexOf('ms') >= 0;\n        });\n        var regExp = /([0-9\\.]+)/;\n        var match = regExp.exec(timeKVP);\n\n        this._times.push(parseFloat(match[1], 10));\n    }\n\n    // Change state if it see a ':' at the end\n    if (line.slice(-1) === ':') {\n        this._changeState(this.STATES.FOOTER);\n    }\n};\n\n/**\n * Process output's footer\n * @param {string} line - A line from system ping\n */\nWinParser.prototype._processFooter = function (line) {\n    // XXX: Assume there is a keyword ms\n    if (line.indexOf('ms') >= 0) {\n        // XXX: Assume the ordering is Min Max Avg\n        var regExp = /([0-9\\.]+)/g;\n        var m1 = regExp.exec(line);\n        var m2 = regExp.exec(line);\n        var m3 = regExp.exec(line);\n\n        if (__.all([m1, m2, m3])) {\n            this._response.min = parseFloat(m1[1], 10);\n            this._response.max = parseFloat(m2[1], 10);\n            this._response.avg = parseFloat(m3[1], 10);\n            this._changeState(this.STATES.END);\n        }\n    }\n};\n\nmodule.exports = WinParser;\n\n\n//# sourceURL=webpack:///./node_modules/ping/lib/parser/win.js?");
+
+
+var util = __webpack_require__(/*! util */ "util");
+var __ = __webpack_require__(/*! underscore */ "./node_modules/underscore/underscore.js");
+
+var base = __webpack_require__(/*! ./base */ "./node_modules/ping/lib/parser/base.js");
+
+/**
+ * @constructor
+ */
+function WinParser() {
+    base.call(this);
+    this._ipv4Regex = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/;
+}
+
+util.inherits(WinParser, base);
+
+/**
+ * Process output's header
+ * @param {string} line - A line from system ping
+ */
+WinParser.prototype._processHeader = function (line) {
+    // Get host and numeric_host
+    var tokens = line.split(' ');
+
+    this._response.host = tokens[1];
+    if (this._ipv4Regex.test(this._response.host)) {
+        this._response.numeric_host = tokens[1];
+    } else {
+        this._response.numeric_host = tokens[2].slice(1, -1);
+    }
+
+    this._changeState(this.STATES.BODY);
+};
+
+/**
+ * Process output's body
+ * @param {string} line - A line from system ping
+ */
+WinParser.prototype._processBody = function (line) {
+    var tokens = line.split(' ');
+    var kvps = __.filter(tokens, function (token) {
+        // Sometime it shows <1ms
+        return token.indexOf('=') >= 0 || token.indexOf('<') >= 0;
+    });
+
+    // kvps.length >= 3 means target is pingable
+    if (kvps.length >= 3) {
+        // XXX: Assume time will alaways get keyword ms for all language
+        var timeKVP = __.find(kvps, function (kvp) {
+            return kvp.indexOf('ms') >= 0;
+        });
+        var regExp = /([0-9\.]+)/;
+        var match = regExp.exec(timeKVP);
+
+        this._times.push(parseFloat(match[1], 10));
+    }
+
+    // Change state if it see a ':' at the end
+    if (line.slice(-1) === ':') {
+        this._changeState(this.STATES.FOOTER);
+    }
+};
+
+/**
+ * Process output's footer
+ * @param {string} line - A line from system ping
+ */
+WinParser.prototype._processFooter = function (line) {
+    // XXX: Assume there is a keyword ms
+    if (line.indexOf('ms') >= 0) {
+        // XXX: Assume the ordering is Min Max Avg
+        var regExp = /([0-9\.]+)/g;
+        var m1 = regExp.exec(line);
+        var m2 = regExp.exec(line);
+        var m3 = regExp.exec(line);
+
+        if (__.all([m1, m2, m3])) {
+            this._response.min = parseFloat(m1[1], 10);
+            this._response.max = parseFloat(m2[1], 10);
+            this._response.avg = parseFloat(m3[1], 10);
+            this._changeState(this.STATES.END);
+        }
+    }
+};
+
+module.exports = WinParser;
+
 
 /***/ }),
 
@@ -370,7 +2795,94 @@ eval("\n\nvar util = __webpack_require__(/*! util */ \"util\");\nvar __ = __webp
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-eval("\n\n/**\n* LICENSE MIT\n* (C) Daniel Zelisko\n* http://github.com/danielzzz/node-ping\n*\n* a simple wrapper for ping\n* Now with support of not only english Windows.\n*\n*/\n\n// System library\nvar util = __webpack_require__(/*! util */ \"util\");\nvar cp = __webpack_require__(/*! child_process */ \"child_process\");\nvar os = __webpack_require__(/*! os */ \"os\");\n\n// 3rd-party library\nvar Q = __webpack_require__(/*! q */ \"./node_modules/q/q.js\");\nvar __ = __webpack_require__(/*! underscore */ \"./node_modules/underscore/underscore.js\");\n\n// Our library\nvar builderFactory = __webpack_require__(/*! ./builder/factory */ \"./node_modules/ping/lib/builder/factory.js\");\nvar parserFactory = __webpack_require__(/*! ./parser/factory */ \"./node_modules/ping/lib/parser/factory.js\");\n\n/**\n * Class::PromisePing\n *\n * @param {string} addr - Hostname or ip addres\n * @param {PingConfig} config - Configuration for command ping\n * @return {Promise}\n */\nfunction probe(addr, config) {\n    // Do not reassign function argument\n    var _config = config || {};\n\n    // Convert callback base system command to promise base\n    var deferred = Q.defer();\n\n    // Spawn a ping process\n    var ping = null;\n    var platform = os.platform();\n    var argumentBuilder = builderFactory.createBuilder(platform);\n    ping = cp.spawn(\n        builderFactory.getExecutablePath(platform),\n        argumentBuilder.getResult(addr, _config)\n    );\n\n    // Initial parser\n    var parser = parserFactory.createParser(platform);\n\n    // Register events from system ping\n    ping.once('error', function () {\n        var err = new Error(\n            util.format(\n                'ping.probe: %s. %s',\n                'there was an error while executing the ping program. ',\n                'Check the path or permissions...'\n            )\n        );\n        deferred.reject(err);\n    });\n\n    // Cache all lines from the system ping\n    var outstring = [];\n    ping.stdout.on('data', function (data) {\n        outstring.push(String(data));\n    });\n\n    // Parse lines we have on closing system ping\n    ping.once('close', function () {\n        // Merge lines we have and split it by \\n\n        var lines = outstring.join('').split('\\n');\n\n        // Parse line one by one\n        __.each(lines, parser.eat, parser);\n\n        // Get result\n        var ret = parser.getResult();\n\n        deferred.resolve(ret);\n    });\n\n    return deferred.promise;\n}\n\nexports.probe = probe;\n\n\n//# sourceURL=webpack:///./node_modules/ping/lib/ping-promise.js?");
+
+
+/**
+* LICENSE MIT
+* (C) Daniel Zelisko
+* http://github.com/danielzzz/node-ping
+*
+* a simple wrapper for ping
+* Now with support of not only english Windows.
+*
+*/
+
+// System library
+var util = __webpack_require__(/*! util */ "util");
+var cp = __webpack_require__(/*! child_process */ "child_process");
+var os = __webpack_require__(/*! os */ "os");
+
+// 3rd-party library
+var Q = __webpack_require__(/*! q */ "./node_modules/q/q.js");
+var __ = __webpack_require__(/*! underscore */ "./node_modules/underscore/underscore.js");
+
+// Our library
+var builderFactory = __webpack_require__(/*! ./builder/factory */ "./node_modules/ping/lib/builder/factory.js");
+var parserFactory = __webpack_require__(/*! ./parser/factory */ "./node_modules/ping/lib/parser/factory.js");
+
+/**
+ * Class::PromisePing
+ *
+ * @param {string} addr - Hostname or ip addres
+ * @param {PingConfig} config - Configuration for command ping
+ * @return {Promise}
+ */
+function probe(addr, config) {
+    // Do not reassign function argument
+    var _config = config || {};
+
+    // Convert callback base system command to promise base
+    var deferred = Q.defer();
+
+    // Spawn a ping process
+    var ping = null;
+    var platform = os.platform();
+    var argumentBuilder = builderFactory.createBuilder(platform);
+    ping = cp.spawn(
+        builderFactory.getExecutablePath(platform),
+        argumentBuilder.getResult(addr, _config)
+    );
+
+    // Initial parser
+    var parser = parserFactory.createParser(platform);
+
+    // Register events from system ping
+    ping.once('error', function () {
+        var err = new Error(
+            util.format(
+                'ping.probe: %s. %s',
+                'there was an error while executing the ping program. ',
+                'Check the path or permissions...'
+            )
+        );
+        deferred.reject(err);
+    });
+
+    // Cache all lines from the system ping
+    var outstring = [];
+    ping.stdout.on('data', function (data) {
+        outstring.push(String(data));
+    });
+
+    // Parse lines we have on closing system ping
+    ping.once('close', function () {
+        // Merge lines we have and split it by \n
+        var lines = outstring.join('').split('\n');
+
+        // Parse line one by one
+        __.each(lines, parser.eat, parser);
+
+        // Get result
+        var ret = parser.getResult();
+
+        deferred.resolve(ret);
+    });
+
+    return deferred.promise;
+}
+
+exports.probe = probe;
+
 
 /***/ }),
 
@@ -382,7 +2894,52 @@ eval("\n\n/**\n* LICENSE MIT\n* (C) Daniel Zelisko\n* http://github.com/danielzz
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-eval("\n\n/**\n* LICENSE MIT\n* (C) Daniel Zelisko\n* http://github.com/danielzzz/node-ping\n*\n* a simple wrapper for ping\n* Now with support of not only english Windows.\n*\n*/\n\n// Promise implementation\nvar ping = __webpack_require__(/*! ./ping-promise */ \"./node_modules/ping/lib/ping-promise.js\");\n\n// TODO:\n// 1. Port round trip time to this callback\n// 2. However, it may breaks backward compatability\n// 3. Need discussion\n/**\n * Callback after probing given host\n * @callback probeCallback\n * @param {boolean} isAlive - Whether target is alive or not\n * @param {Object} error - Null if no error occurs\n */\n\n/**\n * Class::Ping construtor\n *\n * @param {string} addr - Hostname or ip addres\n * @param {probeCallback} cb - Callback\n * @param {PingConfig} config - Configuration for command ping\n */\nfunction probe(addr, cb, config) {\n    // Do not reassign function parameter\n    var _config = config || {};\n\n    return ping.probe(addr, _config).then(function (res) {\n        cb(res.alive, null);\n    }).catch(function (err) {\n        cb(null, err);\n    }).done();\n}\n\nexports.probe = probe;\n\n\n//# sourceURL=webpack:///./node_modules/ping/lib/ping-sys.js?");
+
+
+/**
+* LICENSE MIT
+* (C) Daniel Zelisko
+* http://github.com/danielzzz/node-ping
+*
+* a simple wrapper for ping
+* Now with support of not only english Windows.
+*
+*/
+
+// Promise implementation
+var ping = __webpack_require__(/*! ./ping-promise */ "./node_modules/ping/lib/ping-promise.js");
+
+// TODO:
+// 1. Port round trip time to this callback
+// 2. However, it may breaks backward compatability
+// 3. Need discussion
+/**
+ * Callback after probing given host
+ * @callback probeCallback
+ * @param {boolean} isAlive - Whether target is alive or not
+ * @param {Object} error - Null if no error occurs
+ */
+
+/**
+ * Class::Ping construtor
+ *
+ * @param {string} addr - Hostname or ip addres
+ * @param {probeCallback} cb - Callback
+ * @param {PingConfig} config - Configuration for command ping
+ */
+function probe(addr, cb, config) {
+    // Do not reassign function parameter
+    var _config = config || {};
+
+    return ping.probe(addr, _config).then(function (res) {
+        cb(res.alive, null);
+    }).catch(function (err) {
+        cb(null, err);
+    }).done();
+}
+
+exports.probe = probe;
+
 
 /***/ }),
 
@@ -393,7 +2950,2052 @@ eval("\n\n/**\n* LICENSE MIT\n* (C) Daniel Zelisko\n* http://github.com/danielzz
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("// vim:ts=4:sts=4:sw=4:\n/*!\n *\n * Copyright 2009-2017 Kris Kowal under the terms of the MIT\n * license found at https://github.com/kriskowal/q/blob/v1/LICENSE\n *\n * With parts by Tyler Close\n * Copyright 2007-2009 Tyler Close under the terms of the MIT X license found\n * at http://www.opensource.org/licenses/mit-license.html\n * Forked at ref_send.js version: 2009-05-11\n *\n * With parts by Mark Miller\n * Copyright (C) 2011 Google Inc.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n *\n */\n\n(function (definition) {\n    \"use strict\";\n\n    // This file will function properly as a <script> tag, or a module\n    // using CommonJS and NodeJS or RequireJS module formats.  In\n    // Common/Node/RequireJS, the module exports the Q API and when\n    // executed as a simple <script>, it creates a Q global instead.\n\n    // Montage Require\n    if (typeof bootstrap === \"function\") {\n        bootstrap(\"promise\", definition);\n\n    // CommonJS\n    } else if (true) {\n        module.exports = definition();\n\n    // RequireJS\n    } else { var previousQ, global; }\n\n})(function () {\n\"use strict\";\n\nvar hasStacks = false;\ntry {\n    throw new Error();\n} catch (e) {\n    hasStacks = !!e.stack;\n}\n\n// All code after this point will be filtered from stack traces reported\n// by Q.\nvar qStartingLine = captureLine();\nvar qFileName;\n\n// shims\n\n// used for fallback in \"allResolved\"\nvar noop = function () {};\n\n// Use the fastest possible means to execute a task in a future turn\n// of the event loop.\nvar nextTick =(function () {\n    // linked list of tasks (single, with head node)\n    var head = {task: void 0, next: null};\n    var tail = head;\n    var flushing = false;\n    var requestTick = void 0;\n    var isNodeJS = false;\n    // queue for late tasks, used by unhandled rejection tracking\n    var laterQueue = [];\n\n    function flush() {\n        /* jshint loopfunc: true */\n        var task, domain;\n\n        while (head.next) {\n            head = head.next;\n            task = head.task;\n            head.task = void 0;\n            domain = head.domain;\n\n            if (domain) {\n                head.domain = void 0;\n                domain.enter();\n            }\n            runSingle(task, domain);\n\n        }\n        while (laterQueue.length) {\n            task = laterQueue.pop();\n            runSingle(task);\n        }\n        flushing = false;\n    }\n    // runs a single function in the async queue\n    function runSingle(task, domain) {\n        try {\n            task();\n\n        } catch (e) {\n            if (isNodeJS) {\n                // In node, uncaught exceptions are considered fatal errors.\n                // Re-throw them synchronously to interrupt flushing!\n\n                // Ensure continuation if the uncaught exception is suppressed\n                // listening \"uncaughtException\" events (as domains does).\n                // Continue in next event to avoid tick recursion.\n                if (domain) {\n                    domain.exit();\n                }\n                setTimeout(flush, 0);\n                if (domain) {\n                    domain.enter();\n                }\n\n                throw e;\n\n            } else {\n                // In browsers, uncaught exceptions are not fatal.\n                // Re-throw them asynchronously to avoid slow-downs.\n                setTimeout(function () {\n                    throw e;\n                }, 0);\n            }\n        }\n\n        if (domain) {\n            domain.exit();\n        }\n    }\n\n    nextTick = function (task) {\n        tail = tail.next = {\n            task: task,\n            domain: isNodeJS && process.domain,\n            next: null\n        };\n\n        if (!flushing) {\n            flushing = true;\n            requestTick();\n        }\n    };\n\n    if (typeof process === \"object\" &&\n        process.toString() === \"[object process]\" && process.nextTick) {\n        // Ensure Q is in a real Node environment, with a `process.nextTick`.\n        // To see through fake Node environments:\n        // * Mocha test runner - exposes a `process` global without a `nextTick`\n        // * Browserify - exposes a `process.nexTick` function that uses\n        //   `setTimeout`. In this case `setImmediate` is preferred because\n        //    it is faster. Browserify's `process.toString()` yields\n        //   \"[object Object]\", while in a real Node environment\n        //   `process.toString()` yields \"[object process]\".\n        isNodeJS = true;\n\n        requestTick = function () {\n            process.nextTick(flush);\n        };\n\n    } else if (typeof setImmediate === \"function\") {\n        // In IE10, Node.js 0.9+, or https://github.com/NobleJS/setImmediate\n        if (typeof window !== \"undefined\") {\n            requestTick = setImmediate.bind(window, flush);\n        } else {\n            requestTick = function () {\n                setImmediate(flush);\n            };\n        }\n\n    } else if (typeof MessageChannel !== \"undefined\") {\n        // modern browsers\n        // http://www.nonblocking.io/2011/06/windownexttick.html\n        var channel = new MessageChannel();\n        // At least Safari Version 6.0.5 (8536.30.1) intermittently cannot create\n        // working message ports the first time a page loads.\n        channel.port1.onmessage = function () {\n            requestTick = requestPortTick;\n            channel.port1.onmessage = flush;\n            flush();\n        };\n        var requestPortTick = function () {\n            // Opera requires us to provide a message payload, regardless of\n            // whether we use it.\n            channel.port2.postMessage(0);\n        };\n        requestTick = function () {\n            setTimeout(flush, 0);\n            requestPortTick();\n        };\n\n    } else {\n        // old browsers\n        requestTick = function () {\n            setTimeout(flush, 0);\n        };\n    }\n    // runs a task after all other tasks have been run\n    // this is useful for unhandled rejection tracking that needs to happen\n    // after all `then`d tasks have been run.\n    nextTick.runAfter = function (task) {\n        laterQueue.push(task);\n        if (!flushing) {\n            flushing = true;\n            requestTick();\n        }\n    };\n    return nextTick;\n})();\n\n// Attempt to make generics safe in the face of downstream\n// modifications.\n// There is no situation where this is necessary.\n// If you need a security guarantee, these primordials need to be\n// deeply frozen anyway, and if you don’t need a security guarantee,\n// this is just plain paranoid.\n// However, this **might** have the nice side-effect of reducing the size of\n// the minified code by reducing x.call() to merely x()\n// See Mark Miller’s explanation of what this does.\n// http://wiki.ecmascript.org/doku.php?id=conventions:safe_meta_programming\nvar call = Function.call;\nfunction uncurryThis(f) {\n    return function () {\n        return call.apply(f, arguments);\n    };\n}\n// This is equivalent, but slower:\n// uncurryThis = Function_bind.bind(Function_bind.call);\n// http://jsperf.com/uncurrythis\n\nvar array_slice = uncurryThis(Array.prototype.slice);\n\nvar array_reduce = uncurryThis(\n    Array.prototype.reduce || function (callback, basis) {\n        var index = 0,\n            length = this.length;\n        // concerning the initial value, if one is not provided\n        if (arguments.length === 1) {\n            // seek to the first value in the array, accounting\n            // for the possibility that is is a sparse array\n            do {\n                if (index in this) {\n                    basis = this[index++];\n                    break;\n                }\n                if (++index >= length) {\n                    throw new TypeError();\n                }\n            } while (1);\n        }\n        // reduce\n        for (; index < length; index++) {\n            // account for the possibility that the array is sparse\n            if (index in this) {\n                basis = callback(basis, this[index], index);\n            }\n        }\n        return basis;\n    }\n);\n\nvar array_indexOf = uncurryThis(\n    Array.prototype.indexOf || function (value) {\n        // not a very good shim, but good enough for our one use of it\n        for (var i = 0; i < this.length; i++) {\n            if (this[i] === value) {\n                return i;\n            }\n        }\n        return -1;\n    }\n);\n\nvar array_map = uncurryThis(\n    Array.prototype.map || function (callback, thisp) {\n        var self = this;\n        var collect = [];\n        array_reduce(self, function (undefined, value, index) {\n            collect.push(callback.call(thisp, value, index, self));\n        }, void 0);\n        return collect;\n    }\n);\n\nvar object_create = Object.create || function (prototype) {\n    function Type() { }\n    Type.prototype = prototype;\n    return new Type();\n};\n\nvar object_defineProperty = Object.defineProperty || function (obj, prop, descriptor) {\n    obj[prop] = descriptor.value;\n    return obj;\n};\n\nvar object_hasOwnProperty = uncurryThis(Object.prototype.hasOwnProperty);\n\nvar object_keys = Object.keys || function (object) {\n    var keys = [];\n    for (var key in object) {\n        if (object_hasOwnProperty(object, key)) {\n            keys.push(key);\n        }\n    }\n    return keys;\n};\n\nvar object_toString = uncurryThis(Object.prototype.toString);\n\nfunction isObject(value) {\n    return value === Object(value);\n}\n\n// generator related shims\n\n// FIXME: Remove this function once ES6 generators are in SpiderMonkey.\nfunction isStopIteration(exception) {\n    return (\n        object_toString(exception) === \"[object StopIteration]\" ||\n        exception instanceof QReturnValue\n    );\n}\n\n// FIXME: Remove this helper and Q.return once ES6 generators are in\n// SpiderMonkey.\nvar QReturnValue;\nif (typeof ReturnValue !== \"undefined\") {\n    QReturnValue = ReturnValue;\n} else {\n    QReturnValue = function (value) {\n        this.value = value;\n    };\n}\n\n// long stack traces\n\nvar STACK_JUMP_SEPARATOR = \"From previous event:\";\n\nfunction makeStackTraceLong(error, promise) {\n    // If possible, transform the error stack trace by removing Node and Q\n    // cruft, then concatenating with the stack trace of `promise`. See #57.\n    if (hasStacks &&\n        promise.stack &&\n        typeof error === \"object\" &&\n        error !== null &&\n        error.stack\n    ) {\n        var stacks = [];\n        for (var p = promise; !!p; p = p.source) {\n            if (p.stack && (!error.__minimumStackCounter__ || error.__minimumStackCounter__ > p.stackCounter)) {\n                object_defineProperty(error, \"__minimumStackCounter__\", {value: p.stackCounter, configurable: true});\n                stacks.unshift(p.stack);\n            }\n        }\n        stacks.unshift(error.stack);\n\n        var concatedStacks = stacks.join(\"\\n\" + STACK_JUMP_SEPARATOR + \"\\n\");\n        var stack = filterStackString(concatedStacks);\n        object_defineProperty(error, \"stack\", {value: stack, configurable: true});\n    }\n}\n\nfunction filterStackString(stackString) {\n    var lines = stackString.split(\"\\n\");\n    var desiredLines = [];\n    for (var i = 0; i < lines.length; ++i) {\n        var line = lines[i];\n\n        if (!isInternalFrame(line) && !isNodeFrame(line) && line) {\n            desiredLines.push(line);\n        }\n    }\n    return desiredLines.join(\"\\n\");\n}\n\nfunction isNodeFrame(stackLine) {\n    return stackLine.indexOf(\"(module.js:\") !== -1 ||\n           stackLine.indexOf(\"(node.js:\") !== -1;\n}\n\nfunction getFileNameAndLineNumber(stackLine) {\n    // Named functions: \"at functionName (filename:lineNumber:columnNumber)\"\n    // In IE10 function name can have spaces (\"Anonymous function\") O_o\n    var attempt1 = /at .+ \\((.+):(\\d+):(?:\\d+)\\)$/.exec(stackLine);\n    if (attempt1) {\n        return [attempt1[1], Number(attempt1[2])];\n    }\n\n    // Anonymous functions: \"at filename:lineNumber:columnNumber\"\n    var attempt2 = /at ([^ ]+):(\\d+):(?:\\d+)$/.exec(stackLine);\n    if (attempt2) {\n        return [attempt2[1], Number(attempt2[2])];\n    }\n\n    // Firefox style: \"function@filename:lineNumber or @filename:lineNumber\"\n    var attempt3 = /.*@(.+):(\\d+)$/.exec(stackLine);\n    if (attempt3) {\n        return [attempt3[1], Number(attempt3[2])];\n    }\n}\n\nfunction isInternalFrame(stackLine) {\n    var fileNameAndLineNumber = getFileNameAndLineNumber(stackLine);\n\n    if (!fileNameAndLineNumber) {\n        return false;\n    }\n\n    var fileName = fileNameAndLineNumber[0];\n    var lineNumber = fileNameAndLineNumber[1];\n\n    return fileName === qFileName &&\n        lineNumber >= qStartingLine &&\n        lineNumber <= qEndingLine;\n}\n\n// discover own file name and line number range for filtering stack\n// traces\nfunction captureLine() {\n    if (!hasStacks) {\n        return;\n    }\n\n    try {\n        throw new Error();\n    } catch (e) {\n        var lines = e.stack.split(\"\\n\");\n        var firstLine = lines[0].indexOf(\"@\") > 0 ? lines[1] : lines[2];\n        var fileNameAndLineNumber = getFileNameAndLineNumber(firstLine);\n        if (!fileNameAndLineNumber) {\n            return;\n        }\n\n        qFileName = fileNameAndLineNumber[0];\n        return fileNameAndLineNumber[1];\n    }\n}\n\nfunction deprecate(callback, name, alternative) {\n    return function () {\n        if (typeof console !== \"undefined\" &&\n            typeof console.warn === \"function\") {\n            console.warn(name + \" is deprecated, use \" + alternative +\n                         \" instead.\", new Error(\"\").stack);\n        }\n        return callback.apply(callback, arguments);\n    };\n}\n\n// end of shims\n// beginning of real work\n\n/**\n * Constructs a promise for an immediate reference, passes promises through, or\n * coerces promises from different systems.\n * @param value immediate reference or promise\n */\nfunction Q(value) {\n    // If the object is already a Promise, return it directly.  This enables\n    // the resolve function to both be used to created references from objects,\n    // but to tolerably coerce non-promises to promises.\n    if (value instanceof Promise) {\n        return value;\n    }\n\n    // assimilate thenables\n    if (isPromiseAlike(value)) {\n        return coerce(value);\n    } else {\n        return fulfill(value);\n    }\n}\nQ.resolve = Q;\n\n/**\n * Performs a task in a future turn of the event loop.\n * @param {Function} task\n */\nQ.nextTick = nextTick;\n\n/**\n * Controls whether or not long stack traces will be on\n */\nQ.longStackSupport = false;\n\n/**\n * The counter is used to determine the stopping point for building\n * long stack traces. In makeStackTraceLong we walk backwards through\n * the linked list of promises, only stacks which were created before\n * the rejection are concatenated.\n */\nvar longStackCounter = 1;\n\n// enable long stacks if Q_DEBUG is set\nif (typeof process === \"object\" && process && process.env && process.env.Q_DEBUG) {\n    Q.longStackSupport = true;\n}\n\n/**\n * Constructs a {promise, resolve, reject} object.\n *\n * `resolve` is a callback to invoke with a more resolved value for the\n * promise. To fulfill the promise, invoke `resolve` with any value that is\n * not a thenable. To reject the promise, invoke `resolve` with a rejected\n * thenable, or invoke `reject` with the reason directly. To resolve the\n * promise to another thenable, thus putting it in the same state, invoke\n * `resolve` with that other thenable.\n */\nQ.defer = defer;\nfunction defer() {\n    // if \"messages\" is an \"Array\", that indicates that the promise has not yet\n    // been resolved.  If it is \"undefined\", it has been resolved.  Each\n    // element of the messages array is itself an array of complete arguments to\n    // forward to the resolved promise.  We coerce the resolution value to a\n    // promise using the `resolve` function because it handles both fully\n    // non-thenable values and other thenables gracefully.\n    var messages = [], progressListeners = [], resolvedPromise;\n\n    var deferred = object_create(defer.prototype);\n    var promise = object_create(Promise.prototype);\n\n    promise.promiseDispatch = function (resolve, op, operands) {\n        var args = array_slice(arguments);\n        if (messages) {\n            messages.push(args);\n            if (op === \"when\" && operands[1]) { // progress operand\n                progressListeners.push(operands[1]);\n            }\n        } else {\n            Q.nextTick(function () {\n                resolvedPromise.promiseDispatch.apply(resolvedPromise, args);\n            });\n        }\n    };\n\n    // XXX deprecated\n    promise.valueOf = function () {\n        if (messages) {\n            return promise;\n        }\n        var nearerValue = nearer(resolvedPromise);\n        if (isPromise(nearerValue)) {\n            resolvedPromise = nearerValue; // shorten chain\n        }\n        return nearerValue;\n    };\n\n    promise.inspect = function () {\n        if (!resolvedPromise) {\n            return { state: \"pending\" };\n        }\n        return resolvedPromise.inspect();\n    };\n\n    if (Q.longStackSupport && hasStacks) {\n        try {\n            throw new Error();\n        } catch (e) {\n            // NOTE: don't try to use `Error.captureStackTrace` or transfer the\n            // accessor around; that causes memory leaks as per GH-111. Just\n            // reify the stack trace as a string ASAP.\n            //\n            // At the same time, cut off the first line; it's always just\n            // \"[object Promise]\\n\", as per the `toString`.\n            promise.stack = e.stack.substring(e.stack.indexOf(\"\\n\") + 1);\n            promise.stackCounter = longStackCounter++;\n        }\n    }\n\n    // NOTE: we do the checks for `resolvedPromise` in each method, instead of\n    // consolidating them into `become`, since otherwise we'd create new\n    // promises with the lines `become(whatever(value))`. See e.g. GH-252.\n\n    function become(newPromise) {\n        resolvedPromise = newPromise;\n\n        if (Q.longStackSupport && hasStacks) {\n            // Only hold a reference to the new promise if long stacks\n            // are enabled to reduce memory usage\n            promise.source = newPromise;\n        }\n\n        array_reduce(messages, function (undefined, message) {\n            Q.nextTick(function () {\n                newPromise.promiseDispatch.apply(newPromise, message);\n            });\n        }, void 0);\n\n        messages = void 0;\n        progressListeners = void 0;\n    }\n\n    deferred.promise = promise;\n    deferred.resolve = function (value) {\n        if (resolvedPromise) {\n            return;\n        }\n\n        become(Q(value));\n    };\n\n    deferred.fulfill = function (value) {\n        if (resolvedPromise) {\n            return;\n        }\n\n        become(fulfill(value));\n    };\n    deferred.reject = function (reason) {\n        if (resolvedPromise) {\n            return;\n        }\n\n        become(reject(reason));\n    };\n    deferred.notify = function (progress) {\n        if (resolvedPromise) {\n            return;\n        }\n\n        array_reduce(progressListeners, function (undefined, progressListener) {\n            Q.nextTick(function () {\n                progressListener(progress);\n            });\n        }, void 0);\n    };\n\n    return deferred;\n}\n\n/**\n * Creates a Node-style callback that will resolve or reject the deferred\n * promise.\n * @returns a nodeback\n */\ndefer.prototype.makeNodeResolver = function () {\n    var self = this;\n    return function (error, value) {\n        if (error) {\n            self.reject(error);\n        } else if (arguments.length > 2) {\n            self.resolve(array_slice(arguments, 1));\n        } else {\n            self.resolve(value);\n        }\n    };\n};\n\n/**\n * @param resolver {Function} a function that returns nothing and accepts\n * the resolve, reject, and notify functions for a deferred.\n * @returns a promise that may be resolved with the given resolve and reject\n * functions, or rejected by a thrown exception in resolver\n */\nQ.Promise = promise; // ES6\nQ.promise = promise;\nfunction promise(resolver) {\n    if (typeof resolver !== \"function\") {\n        throw new TypeError(\"resolver must be a function.\");\n    }\n    var deferred = defer();\n    try {\n        resolver(deferred.resolve, deferred.reject, deferred.notify);\n    } catch (reason) {\n        deferred.reject(reason);\n    }\n    return deferred.promise;\n}\n\npromise.race = race; // ES6\npromise.all = all; // ES6\npromise.reject = reject; // ES6\npromise.resolve = Q; // ES6\n\n// XXX experimental.  This method is a way to denote that a local value is\n// serializable and should be immediately dispatched to a remote upon request,\n// instead of passing a reference.\nQ.passByCopy = function (object) {\n    //freeze(object);\n    //passByCopies.set(object, true);\n    return object;\n};\n\nPromise.prototype.passByCopy = function () {\n    //freeze(object);\n    //passByCopies.set(object, true);\n    return this;\n};\n\n/**\n * If two promises eventually fulfill to the same value, promises that value,\n * but otherwise rejects.\n * @param x {Any*}\n * @param y {Any*}\n * @returns {Any*} a promise for x and y if they are the same, but a rejection\n * otherwise.\n *\n */\nQ.join = function (x, y) {\n    return Q(x).join(y);\n};\n\nPromise.prototype.join = function (that) {\n    return Q([this, that]).spread(function (x, y) {\n        if (x === y) {\n            // TODO: \"===\" should be Object.is or equiv\n            return x;\n        } else {\n            throw new Error(\"Q can't join: not the same: \" + x + \" \" + y);\n        }\n    });\n};\n\n/**\n * Returns a promise for the first of an array of promises to become settled.\n * @param answers {Array[Any*]} promises to race\n * @returns {Any*} the first promise to be settled\n */\nQ.race = race;\nfunction race(answerPs) {\n    return promise(function (resolve, reject) {\n        // Switch to this once we can assume at least ES5\n        // answerPs.forEach(function (answerP) {\n        //     Q(answerP).then(resolve, reject);\n        // });\n        // Use this in the meantime\n        for (var i = 0, len = answerPs.length; i < len; i++) {\n            Q(answerPs[i]).then(resolve, reject);\n        }\n    });\n}\n\nPromise.prototype.race = function () {\n    return this.then(Q.race);\n};\n\n/**\n * Constructs a Promise with a promise descriptor object and optional fallback\n * function.  The descriptor contains methods like when(rejected), get(name),\n * set(name, value), post(name, args), and delete(name), which all\n * return either a value, a promise for a value, or a rejection.  The fallback\n * accepts the operation name, a resolver, and any further arguments that would\n * have been forwarded to the appropriate method above had a method been\n * provided with the proper name.  The API makes no guarantees about the nature\n * of the returned object, apart from that it is usable whereever promises are\n * bought and sold.\n */\nQ.makePromise = Promise;\nfunction Promise(descriptor, fallback, inspect) {\n    if (fallback === void 0) {\n        fallback = function (op) {\n            return reject(new Error(\n                \"Promise does not support operation: \" + op\n            ));\n        };\n    }\n    if (inspect === void 0) {\n        inspect = function () {\n            return {state: \"unknown\"};\n        };\n    }\n\n    var promise = object_create(Promise.prototype);\n\n    promise.promiseDispatch = function (resolve, op, args) {\n        var result;\n        try {\n            if (descriptor[op]) {\n                result = descriptor[op].apply(promise, args);\n            } else {\n                result = fallback.call(promise, op, args);\n            }\n        } catch (exception) {\n            result = reject(exception);\n        }\n        if (resolve) {\n            resolve(result);\n        }\n    };\n\n    promise.inspect = inspect;\n\n    // XXX deprecated `valueOf` and `exception` support\n    if (inspect) {\n        var inspected = inspect();\n        if (inspected.state === \"rejected\") {\n            promise.exception = inspected.reason;\n        }\n\n        promise.valueOf = function () {\n            var inspected = inspect();\n            if (inspected.state === \"pending\" ||\n                inspected.state === \"rejected\") {\n                return promise;\n            }\n            return inspected.value;\n        };\n    }\n\n    return promise;\n}\n\nPromise.prototype.toString = function () {\n    return \"[object Promise]\";\n};\n\nPromise.prototype.then = function (fulfilled, rejected, progressed) {\n    var self = this;\n    var deferred = defer();\n    var done = false;   // ensure the untrusted promise makes at most a\n                        // single call to one of the callbacks\n\n    function _fulfilled(value) {\n        try {\n            return typeof fulfilled === \"function\" ? fulfilled(value) : value;\n        } catch (exception) {\n            return reject(exception);\n        }\n    }\n\n    function _rejected(exception) {\n        if (typeof rejected === \"function\") {\n            makeStackTraceLong(exception, self);\n            try {\n                return rejected(exception);\n            } catch (newException) {\n                return reject(newException);\n            }\n        }\n        return reject(exception);\n    }\n\n    function _progressed(value) {\n        return typeof progressed === \"function\" ? progressed(value) : value;\n    }\n\n    Q.nextTick(function () {\n        self.promiseDispatch(function (value) {\n            if (done) {\n                return;\n            }\n            done = true;\n\n            deferred.resolve(_fulfilled(value));\n        }, \"when\", [function (exception) {\n            if (done) {\n                return;\n            }\n            done = true;\n\n            deferred.resolve(_rejected(exception));\n        }]);\n    });\n\n    // Progress propagator need to be attached in the current tick.\n    self.promiseDispatch(void 0, \"when\", [void 0, function (value) {\n        var newValue;\n        var threw = false;\n        try {\n            newValue = _progressed(value);\n        } catch (e) {\n            threw = true;\n            if (Q.onerror) {\n                Q.onerror(e);\n            } else {\n                throw e;\n            }\n        }\n\n        if (!threw) {\n            deferred.notify(newValue);\n        }\n    }]);\n\n    return deferred.promise;\n};\n\nQ.tap = function (promise, callback) {\n    return Q(promise).tap(callback);\n};\n\n/**\n * Works almost like \"finally\", but not called for rejections.\n * Original resolution value is passed through callback unaffected.\n * Callback may return a promise that will be awaited for.\n * @param {Function} callback\n * @returns {Q.Promise}\n * @example\n * doSomething()\n *   .then(...)\n *   .tap(console.log)\n *   .then(...);\n */\nPromise.prototype.tap = function (callback) {\n    callback = Q(callback);\n\n    return this.then(function (value) {\n        return callback.fcall(value).thenResolve(value);\n    });\n};\n\n/**\n * Registers an observer on a promise.\n *\n * Guarantees:\n *\n * 1. that fulfilled and rejected will be called only once.\n * 2. that either the fulfilled callback or the rejected callback will be\n *    called, but not both.\n * 3. that fulfilled and rejected will not be called in this turn.\n *\n * @param value      promise or immediate reference to observe\n * @param fulfilled  function to be called with the fulfilled value\n * @param rejected   function to be called with the rejection exception\n * @param progressed function to be called on any progress notifications\n * @return promise for the return value from the invoked callback\n */\nQ.when = when;\nfunction when(value, fulfilled, rejected, progressed) {\n    return Q(value).then(fulfilled, rejected, progressed);\n}\n\nPromise.prototype.thenResolve = function (value) {\n    return this.then(function () { return value; });\n};\n\nQ.thenResolve = function (promise, value) {\n    return Q(promise).thenResolve(value);\n};\n\nPromise.prototype.thenReject = function (reason) {\n    return this.then(function () { throw reason; });\n};\n\nQ.thenReject = function (promise, reason) {\n    return Q(promise).thenReject(reason);\n};\n\n/**\n * If an object is not a promise, it is as \"near\" as possible.\n * If a promise is rejected, it is as \"near\" as possible too.\n * If it’s a fulfilled promise, the fulfillment value is nearer.\n * If it’s a deferred promise and the deferred has been resolved, the\n * resolution is \"nearer\".\n * @param object\n * @returns most resolved (nearest) form of the object\n */\n\n// XXX should we re-do this?\nQ.nearer = nearer;\nfunction nearer(value) {\n    if (isPromise(value)) {\n        var inspected = value.inspect();\n        if (inspected.state === \"fulfilled\") {\n            return inspected.value;\n        }\n    }\n    return value;\n}\n\n/**\n * @returns whether the given object is a promise.\n * Otherwise it is a fulfilled value.\n */\nQ.isPromise = isPromise;\nfunction isPromise(object) {\n    return object instanceof Promise;\n}\n\nQ.isPromiseAlike = isPromiseAlike;\nfunction isPromiseAlike(object) {\n    return isObject(object) && typeof object.then === \"function\";\n}\n\n/**\n * @returns whether the given object is a pending promise, meaning not\n * fulfilled or rejected.\n */\nQ.isPending = isPending;\nfunction isPending(object) {\n    return isPromise(object) && object.inspect().state === \"pending\";\n}\n\nPromise.prototype.isPending = function () {\n    return this.inspect().state === \"pending\";\n};\n\n/**\n * @returns whether the given object is a value or fulfilled\n * promise.\n */\nQ.isFulfilled = isFulfilled;\nfunction isFulfilled(object) {\n    return !isPromise(object) || object.inspect().state === \"fulfilled\";\n}\n\nPromise.prototype.isFulfilled = function () {\n    return this.inspect().state === \"fulfilled\";\n};\n\n/**\n * @returns whether the given object is a rejected promise.\n */\nQ.isRejected = isRejected;\nfunction isRejected(object) {\n    return isPromise(object) && object.inspect().state === \"rejected\";\n}\n\nPromise.prototype.isRejected = function () {\n    return this.inspect().state === \"rejected\";\n};\n\n//// BEGIN UNHANDLED REJECTION TRACKING\n\n// This promise library consumes exceptions thrown in handlers so they can be\n// handled by a subsequent promise.  The exceptions get added to this array when\n// they are created, and removed when they are handled.  Note that in ES6 or\n// shimmed environments, this would naturally be a `Set`.\nvar unhandledReasons = [];\nvar unhandledRejections = [];\nvar reportedUnhandledRejections = [];\nvar trackUnhandledRejections = true;\n\nfunction resetUnhandledRejections() {\n    unhandledReasons.length = 0;\n    unhandledRejections.length = 0;\n\n    if (!trackUnhandledRejections) {\n        trackUnhandledRejections = true;\n    }\n}\n\nfunction trackRejection(promise, reason) {\n    if (!trackUnhandledRejections) {\n        return;\n    }\n    if (typeof process === \"object\" && typeof process.emit === \"function\") {\n        Q.nextTick.runAfter(function () {\n            if (array_indexOf(unhandledRejections, promise) !== -1) {\n                process.emit(\"unhandledRejection\", reason, promise);\n                reportedUnhandledRejections.push(promise);\n            }\n        });\n    }\n\n    unhandledRejections.push(promise);\n    if (reason && typeof reason.stack !== \"undefined\") {\n        unhandledReasons.push(reason.stack);\n    } else {\n        unhandledReasons.push(\"(no stack) \" + reason);\n    }\n}\n\nfunction untrackRejection(promise) {\n    if (!trackUnhandledRejections) {\n        return;\n    }\n\n    var at = array_indexOf(unhandledRejections, promise);\n    if (at !== -1) {\n        if (typeof process === \"object\" && typeof process.emit === \"function\") {\n            Q.nextTick.runAfter(function () {\n                var atReport = array_indexOf(reportedUnhandledRejections, promise);\n                if (atReport !== -1) {\n                    process.emit(\"rejectionHandled\", unhandledReasons[at], promise);\n                    reportedUnhandledRejections.splice(atReport, 1);\n                }\n            });\n        }\n        unhandledRejections.splice(at, 1);\n        unhandledReasons.splice(at, 1);\n    }\n}\n\nQ.resetUnhandledRejections = resetUnhandledRejections;\n\nQ.getUnhandledReasons = function () {\n    // Make a copy so that consumers can't interfere with our internal state.\n    return unhandledReasons.slice();\n};\n\nQ.stopUnhandledRejectionTracking = function () {\n    resetUnhandledRejections();\n    trackUnhandledRejections = false;\n};\n\nresetUnhandledRejections();\n\n//// END UNHANDLED REJECTION TRACKING\n\n/**\n * Constructs a rejected promise.\n * @param reason value describing the failure\n */\nQ.reject = reject;\nfunction reject(reason) {\n    var rejection = Promise({\n        \"when\": function (rejected) {\n            // note that the error has been handled\n            if (rejected) {\n                untrackRejection(this);\n            }\n            return rejected ? rejected(reason) : this;\n        }\n    }, function fallback() {\n        return this;\n    }, function inspect() {\n        return { state: \"rejected\", reason: reason };\n    });\n\n    // Note that the reason has not been handled.\n    trackRejection(rejection, reason);\n\n    return rejection;\n}\n\n/**\n * Constructs a fulfilled promise for an immediate reference.\n * @param value immediate reference\n */\nQ.fulfill = fulfill;\nfunction fulfill(value) {\n    return Promise({\n        \"when\": function () {\n            return value;\n        },\n        \"get\": function (name) {\n            return value[name];\n        },\n        \"set\": function (name, rhs) {\n            value[name] = rhs;\n        },\n        \"delete\": function (name) {\n            delete value[name];\n        },\n        \"post\": function (name, args) {\n            // Mark Miller proposes that post with no name should apply a\n            // promised function.\n            if (name === null || name === void 0) {\n                return value.apply(void 0, args);\n            } else {\n                return value[name].apply(value, args);\n            }\n        },\n        \"apply\": function (thisp, args) {\n            return value.apply(thisp, args);\n        },\n        \"keys\": function () {\n            return object_keys(value);\n        }\n    }, void 0, function inspect() {\n        return { state: \"fulfilled\", value: value };\n    });\n}\n\n/**\n * Converts thenables to Q promises.\n * @param promise thenable promise\n * @returns a Q promise\n */\nfunction coerce(promise) {\n    var deferred = defer();\n    Q.nextTick(function () {\n        try {\n            promise.then(deferred.resolve, deferred.reject, deferred.notify);\n        } catch (exception) {\n            deferred.reject(exception);\n        }\n    });\n    return deferred.promise;\n}\n\n/**\n * Annotates an object such that it will never be\n * transferred away from this process over any promise\n * communication channel.\n * @param object\n * @returns promise a wrapping of that object that\n * additionally responds to the \"isDef\" message\n * without a rejection.\n */\nQ.master = master;\nfunction master(object) {\n    return Promise({\n        \"isDef\": function () {}\n    }, function fallback(op, args) {\n        return dispatch(object, op, args);\n    }, function () {\n        return Q(object).inspect();\n    });\n}\n\n/**\n * Spreads the values of a promised array of arguments into the\n * fulfillment callback.\n * @param fulfilled callback that receives variadic arguments from the\n * promised array\n * @param rejected callback that receives the exception if the promise\n * is rejected.\n * @returns a promise for the return value or thrown exception of\n * either callback.\n */\nQ.spread = spread;\nfunction spread(value, fulfilled, rejected) {\n    return Q(value).spread(fulfilled, rejected);\n}\n\nPromise.prototype.spread = function (fulfilled, rejected) {\n    return this.all().then(function (array) {\n        return fulfilled.apply(void 0, array);\n    }, rejected);\n};\n\n/**\n * The async function is a decorator for generator functions, turning\n * them into asynchronous generators.  Although generators are only part\n * of the newest ECMAScript 6 drafts, this code does not cause syntax\n * errors in older engines.  This code should continue to work and will\n * in fact improve over time as the language improves.\n *\n * ES6 generators are currently part of V8 version 3.19 with the\n * --harmony-generators runtime flag enabled.  SpiderMonkey has had them\n * for longer, but under an older Python-inspired form.  This function\n * works on both kinds of generators.\n *\n * Decorates a generator function such that:\n *  - it may yield promises\n *  - execution will continue when that promise is fulfilled\n *  - the value of the yield expression will be the fulfilled value\n *  - it returns a promise for the return value (when the generator\n *    stops iterating)\n *  - the decorated function returns a promise for the return value\n *    of the generator or the first rejected promise among those\n *    yielded.\n *  - if an error is thrown in the generator, it propagates through\n *    every following yield until it is caught, or until it escapes\n *    the generator function altogether, and is translated into a\n *    rejection for the promise returned by the decorated generator.\n */\nQ.async = async;\nfunction async(makeGenerator) {\n    return function () {\n        // when verb is \"send\", arg is a value\n        // when verb is \"throw\", arg is an exception\n        function continuer(verb, arg) {\n            var result;\n\n            // Until V8 3.19 / Chromium 29 is released, SpiderMonkey is the only\n            // engine that has a deployed base of browsers that support generators.\n            // However, SM's generators use the Python-inspired semantics of\n            // outdated ES6 drafts.  We would like to support ES6, but we'd also\n            // like to make it possible to use generators in deployed browsers, so\n            // we also support Python-style generators.  At some point we can remove\n            // this block.\n\n            if (typeof StopIteration === \"undefined\") {\n                // ES6 Generators\n                try {\n                    result = generator[verb](arg);\n                } catch (exception) {\n                    return reject(exception);\n                }\n                if (result.done) {\n                    return Q(result.value);\n                } else {\n                    return when(result.value, callback, errback);\n                }\n            } else {\n                // SpiderMonkey Generators\n                // FIXME: Remove this case when SM does ES6 generators.\n                try {\n                    result = generator[verb](arg);\n                } catch (exception) {\n                    if (isStopIteration(exception)) {\n                        return Q(exception.value);\n                    } else {\n                        return reject(exception);\n                    }\n                }\n                return when(result, callback, errback);\n            }\n        }\n        var generator = makeGenerator.apply(this, arguments);\n        var callback = continuer.bind(continuer, \"next\");\n        var errback = continuer.bind(continuer, \"throw\");\n        return callback();\n    };\n}\n\n/**\n * The spawn function is a small wrapper around async that immediately\n * calls the generator and also ends the promise chain, so that any\n * unhandled errors are thrown instead of forwarded to the error\n * handler. This is useful because it's extremely common to run\n * generators at the top-level to work with libraries.\n */\nQ.spawn = spawn;\nfunction spawn(makeGenerator) {\n    Q.done(Q.async(makeGenerator)());\n}\n\n// FIXME: Remove this interface once ES6 generators are in SpiderMonkey.\n/**\n * Throws a ReturnValue exception to stop an asynchronous generator.\n *\n * This interface is a stop-gap measure to support generator return\n * values in older Firefox/SpiderMonkey.  In browsers that support ES6\n * generators like Chromium 29, just use \"return\" in your generator\n * functions.\n *\n * @param value the return value for the surrounding generator\n * @throws ReturnValue exception with the value.\n * @example\n * // ES6 style\n * Q.async(function* () {\n *      var foo = yield getFooPromise();\n *      var bar = yield getBarPromise();\n *      return foo + bar;\n * })\n * // Older SpiderMonkey style\n * Q.async(function () {\n *      var foo = yield getFooPromise();\n *      var bar = yield getBarPromise();\n *      Q.return(foo + bar);\n * })\n */\nQ[\"return\"] = _return;\nfunction _return(value) {\n    throw new QReturnValue(value);\n}\n\n/**\n * The promised function decorator ensures that any promise arguments\n * are settled and passed as values (`this` is also settled and passed\n * as a value).  It will also ensure that the result of a function is\n * always a promise.\n *\n * @example\n * var add = Q.promised(function (a, b) {\n *     return a + b;\n * });\n * add(Q(a), Q(B));\n *\n * @param {function} callback The function to decorate\n * @returns {function} a function that has been decorated.\n */\nQ.promised = promised;\nfunction promised(callback) {\n    return function () {\n        return spread([this, all(arguments)], function (self, args) {\n            return callback.apply(self, args);\n        });\n    };\n}\n\n/**\n * sends a message to a value in a future turn\n * @param object* the recipient\n * @param op the name of the message operation, e.g., \"when\",\n * @param args further arguments to be forwarded to the operation\n * @returns result {Promise} a promise for the result of the operation\n */\nQ.dispatch = dispatch;\nfunction dispatch(object, op, args) {\n    return Q(object).dispatch(op, args);\n}\n\nPromise.prototype.dispatch = function (op, args) {\n    var self = this;\n    var deferred = defer();\n    Q.nextTick(function () {\n        self.promiseDispatch(deferred.resolve, op, args);\n    });\n    return deferred.promise;\n};\n\n/**\n * Gets the value of a property in a future turn.\n * @param object    promise or immediate reference for target object\n * @param name      name of property to get\n * @return promise for the property value\n */\nQ.get = function (object, key) {\n    return Q(object).dispatch(\"get\", [key]);\n};\n\nPromise.prototype.get = function (key) {\n    return this.dispatch(\"get\", [key]);\n};\n\n/**\n * Sets the value of a property in a future turn.\n * @param object    promise or immediate reference for object object\n * @param name      name of property to set\n * @param value     new value of property\n * @return promise for the return value\n */\nQ.set = function (object, key, value) {\n    return Q(object).dispatch(\"set\", [key, value]);\n};\n\nPromise.prototype.set = function (key, value) {\n    return this.dispatch(\"set\", [key, value]);\n};\n\n/**\n * Deletes a property in a future turn.\n * @param object    promise or immediate reference for target object\n * @param name      name of property to delete\n * @return promise for the return value\n */\nQ.del = // XXX legacy\nQ[\"delete\"] = function (object, key) {\n    return Q(object).dispatch(\"delete\", [key]);\n};\n\nPromise.prototype.del = // XXX legacy\nPromise.prototype[\"delete\"] = function (key) {\n    return this.dispatch(\"delete\", [key]);\n};\n\n/**\n * Invokes a method in a future turn.\n * @param object    promise or immediate reference for target object\n * @param name      name of method to invoke\n * @param value     a value to post, typically an array of\n *                  invocation arguments for promises that\n *                  are ultimately backed with `resolve` values,\n *                  as opposed to those backed with URLs\n *                  wherein the posted value can be any\n *                  JSON serializable object.\n * @return promise for the return value\n */\n// bound locally because it is used by other methods\nQ.mapply = // XXX As proposed by \"Redsandro\"\nQ.post = function (object, name, args) {\n    return Q(object).dispatch(\"post\", [name, args]);\n};\n\nPromise.prototype.mapply = // XXX As proposed by \"Redsandro\"\nPromise.prototype.post = function (name, args) {\n    return this.dispatch(\"post\", [name, args]);\n};\n\n/**\n * Invokes a method in a future turn.\n * @param object    promise or immediate reference for target object\n * @param name      name of method to invoke\n * @param ...args   array of invocation arguments\n * @return promise for the return value\n */\nQ.send = // XXX Mark Miller's proposed parlance\nQ.mcall = // XXX As proposed by \"Redsandro\"\nQ.invoke = function (object, name /*...args*/) {\n    return Q(object).dispatch(\"post\", [name, array_slice(arguments, 2)]);\n};\n\nPromise.prototype.send = // XXX Mark Miller's proposed parlance\nPromise.prototype.mcall = // XXX As proposed by \"Redsandro\"\nPromise.prototype.invoke = function (name /*...args*/) {\n    return this.dispatch(\"post\", [name, array_slice(arguments, 1)]);\n};\n\n/**\n * Applies the promised function in a future turn.\n * @param object    promise or immediate reference for target function\n * @param args      array of application arguments\n */\nQ.fapply = function (object, args) {\n    return Q(object).dispatch(\"apply\", [void 0, args]);\n};\n\nPromise.prototype.fapply = function (args) {\n    return this.dispatch(\"apply\", [void 0, args]);\n};\n\n/**\n * Calls the promised function in a future turn.\n * @param object    promise or immediate reference for target function\n * @param ...args   array of application arguments\n */\nQ[\"try\"] =\nQ.fcall = function (object /* ...args*/) {\n    return Q(object).dispatch(\"apply\", [void 0, array_slice(arguments, 1)]);\n};\n\nPromise.prototype.fcall = function (/*...args*/) {\n    return this.dispatch(\"apply\", [void 0, array_slice(arguments)]);\n};\n\n/**\n * Binds the promised function, transforming return values into a fulfilled\n * promise and thrown errors into a rejected one.\n * @param object    promise or immediate reference for target function\n * @param ...args   array of application arguments\n */\nQ.fbind = function (object /*...args*/) {\n    var promise = Q(object);\n    var args = array_slice(arguments, 1);\n    return function fbound() {\n        return promise.dispatch(\"apply\", [\n            this,\n            args.concat(array_slice(arguments))\n        ]);\n    };\n};\nPromise.prototype.fbind = function (/*...args*/) {\n    var promise = this;\n    var args = array_slice(arguments);\n    return function fbound() {\n        return promise.dispatch(\"apply\", [\n            this,\n            args.concat(array_slice(arguments))\n        ]);\n    };\n};\n\n/**\n * Requests the names of the owned properties of a promised\n * object in a future turn.\n * @param object    promise or immediate reference for target object\n * @return promise for the keys of the eventually settled object\n */\nQ.keys = function (object) {\n    return Q(object).dispatch(\"keys\", []);\n};\n\nPromise.prototype.keys = function () {\n    return this.dispatch(\"keys\", []);\n};\n\n/**\n * Turns an array of promises into a promise for an array.  If any of\n * the promises gets rejected, the whole array is rejected immediately.\n * @param {Array*} an array (or promise for an array) of values (or\n * promises for values)\n * @returns a promise for an array of the corresponding values\n */\n// By Mark Miller\n// http://wiki.ecmascript.org/doku.php?id=strawman:concurrency&rev=1308776521#allfulfilled\nQ.all = all;\nfunction all(promises) {\n    return when(promises, function (promises) {\n        var pendingCount = 0;\n        var deferred = defer();\n        array_reduce(promises, function (undefined, promise, index) {\n            var snapshot;\n            if (\n                isPromise(promise) &&\n                (snapshot = promise.inspect()).state === \"fulfilled\"\n            ) {\n                promises[index] = snapshot.value;\n            } else {\n                ++pendingCount;\n                when(\n                    promise,\n                    function (value) {\n                        promises[index] = value;\n                        if (--pendingCount === 0) {\n                            deferred.resolve(promises);\n                        }\n                    },\n                    deferred.reject,\n                    function (progress) {\n                        deferred.notify({ index: index, value: progress });\n                    }\n                );\n            }\n        }, void 0);\n        if (pendingCount === 0) {\n            deferred.resolve(promises);\n        }\n        return deferred.promise;\n    });\n}\n\nPromise.prototype.all = function () {\n    return all(this);\n};\n\n/**\n * Returns the first resolved promise of an array. Prior rejected promises are\n * ignored.  Rejects only if all promises are rejected.\n * @param {Array*} an array containing values or promises for values\n * @returns a promise fulfilled with the value of the first resolved promise,\n * or a rejected promise if all promises are rejected.\n */\nQ.any = any;\n\nfunction any(promises) {\n    if (promises.length === 0) {\n        return Q.resolve();\n    }\n\n    var deferred = Q.defer();\n    var pendingCount = 0;\n    array_reduce(promises, function (prev, current, index) {\n        var promise = promises[index];\n\n        pendingCount++;\n\n        when(promise, onFulfilled, onRejected, onProgress);\n        function onFulfilled(result) {\n            deferred.resolve(result);\n        }\n        function onRejected(err) {\n            pendingCount--;\n            if (pendingCount === 0) {\n                var rejection = err || new Error(\"\" + err);\n\n                rejection.message = (\"Q can't get fulfillment value from any promise, all \" +\n                    \"promises were rejected. Last error message: \" + rejection.message);\n\n                deferred.reject(rejection);\n            }\n        }\n        function onProgress(progress) {\n            deferred.notify({\n                index: index,\n                value: progress\n            });\n        }\n    }, undefined);\n\n    return deferred.promise;\n}\n\nPromise.prototype.any = function () {\n    return any(this);\n};\n\n/**\n * Waits for all promises to be settled, either fulfilled or\n * rejected.  This is distinct from `all` since that would stop\n * waiting at the first rejection.  The promise returned by\n * `allResolved` will never be rejected.\n * @param promises a promise for an array (or an array) of promises\n * (or values)\n * @return a promise for an array of promises\n */\nQ.allResolved = deprecate(allResolved, \"allResolved\", \"allSettled\");\nfunction allResolved(promises) {\n    return when(promises, function (promises) {\n        promises = array_map(promises, Q);\n        return when(all(array_map(promises, function (promise) {\n            return when(promise, noop, noop);\n        })), function () {\n            return promises;\n        });\n    });\n}\n\nPromise.prototype.allResolved = function () {\n    return allResolved(this);\n};\n\n/**\n * @see Promise#allSettled\n */\nQ.allSettled = allSettled;\nfunction allSettled(promises) {\n    return Q(promises).allSettled();\n}\n\n/**\n * Turns an array of promises into a promise for an array of their states (as\n * returned by `inspect`) when they have all settled.\n * @param {Array[Any*]} values an array (or promise for an array) of values (or\n * promises for values)\n * @returns {Array[State]} an array of states for the respective values.\n */\nPromise.prototype.allSettled = function () {\n    return this.then(function (promises) {\n        return all(array_map(promises, function (promise) {\n            promise = Q(promise);\n            function regardless() {\n                return promise.inspect();\n            }\n            return promise.then(regardless, regardless);\n        }));\n    });\n};\n\n/**\n * Captures the failure of a promise, giving an oportunity to recover\n * with a callback.  If the given promise is fulfilled, the returned\n * promise is fulfilled.\n * @param {Any*} promise for something\n * @param {Function} callback to fulfill the returned promise if the\n * given promise is rejected\n * @returns a promise for the return value of the callback\n */\nQ.fail = // XXX legacy\nQ[\"catch\"] = function (object, rejected) {\n    return Q(object).then(void 0, rejected);\n};\n\nPromise.prototype.fail = // XXX legacy\nPromise.prototype[\"catch\"] = function (rejected) {\n    return this.then(void 0, rejected);\n};\n\n/**\n * Attaches a listener that can respond to progress notifications from a\n * promise's originating deferred. This listener receives the exact arguments\n * passed to ``deferred.notify``.\n * @param {Any*} promise for something\n * @param {Function} callback to receive any progress notifications\n * @returns the given promise, unchanged\n */\nQ.progress = progress;\nfunction progress(object, progressed) {\n    return Q(object).then(void 0, void 0, progressed);\n}\n\nPromise.prototype.progress = function (progressed) {\n    return this.then(void 0, void 0, progressed);\n};\n\n/**\n * Provides an opportunity to observe the settling of a promise,\n * regardless of whether the promise is fulfilled or rejected.  Forwards\n * the resolution to the returned promise when the callback is done.\n * The callback can return a promise to defer completion.\n * @param {Any*} promise\n * @param {Function} callback to observe the resolution of the given\n * promise, takes no arguments.\n * @returns a promise for the resolution of the given promise when\n * ``fin`` is done.\n */\nQ.fin = // XXX legacy\nQ[\"finally\"] = function (object, callback) {\n    return Q(object)[\"finally\"](callback);\n};\n\nPromise.prototype.fin = // XXX legacy\nPromise.prototype[\"finally\"] = function (callback) {\n    if (!callback || typeof callback.apply !== \"function\") {\n        throw new Error(\"Q can't apply finally callback\");\n    }\n    callback = Q(callback);\n    return this.then(function (value) {\n        return callback.fcall().then(function () {\n            return value;\n        });\n    }, function (reason) {\n        // TODO attempt to recycle the rejection with \"this\".\n        return callback.fcall().then(function () {\n            throw reason;\n        });\n    });\n};\n\n/**\n * Terminates a chain of promises, forcing rejections to be\n * thrown as exceptions.\n * @param {Any*} promise at the end of a chain of promises\n * @returns nothing\n */\nQ.done = function (object, fulfilled, rejected, progress) {\n    return Q(object).done(fulfilled, rejected, progress);\n};\n\nPromise.prototype.done = function (fulfilled, rejected, progress) {\n    var onUnhandledError = function (error) {\n        // forward to a future turn so that ``when``\n        // does not catch it and turn it into a rejection.\n        Q.nextTick(function () {\n            makeStackTraceLong(error, promise);\n            if (Q.onerror) {\n                Q.onerror(error);\n            } else {\n                throw error;\n            }\n        });\n    };\n\n    // Avoid unnecessary `nextTick`ing via an unnecessary `when`.\n    var promise = fulfilled || rejected || progress ?\n        this.then(fulfilled, rejected, progress) :\n        this;\n\n    if (typeof process === \"object\" && process && process.domain) {\n        onUnhandledError = process.domain.bind(onUnhandledError);\n    }\n\n    promise.then(void 0, onUnhandledError);\n};\n\n/**\n * Causes a promise to be rejected if it does not get fulfilled before\n * some milliseconds time out.\n * @param {Any*} promise\n * @param {Number} milliseconds timeout\n * @param {Any*} custom error message or Error object (optional)\n * @returns a promise for the resolution of the given promise if it is\n * fulfilled before the timeout, otherwise rejected.\n */\nQ.timeout = function (object, ms, error) {\n    return Q(object).timeout(ms, error);\n};\n\nPromise.prototype.timeout = function (ms, error) {\n    var deferred = defer();\n    var timeoutId = setTimeout(function () {\n        if (!error || \"string\" === typeof error) {\n            error = new Error(error || \"Timed out after \" + ms + \" ms\");\n            error.code = \"ETIMEDOUT\";\n        }\n        deferred.reject(error);\n    }, ms);\n\n    this.then(function (value) {\n        clearTimeout(timeoutId);\n        deferred.resolve(value);\n    }, function (exception) {\n        clearTimeout(timeoutId);\n        deferred.reject(exception);\n    }, deferred.notify);\n\n    return deferred.promise;\n};\n\n/**\n * Returns a promise for the given value (or promised value), some\n * milliseconds after it resolved. Passes rejections immediately.\n * @param {Any*} promise\n * @param {Number} milliseconds\n * @returns a promise for the resolution of the given promise after milliseconds\n * time has elapsed since the resolution of the given promise.\n * If the given promise rejects, that is passed immediately.\n */\nQ.delay = function (object, timeout) {\n    if (timeout === void 0) {\n        timeout = object;\n        object = void 0;\n    }\n    return Q(object).delay(timeout);\n};\n\nPromise.prototype.delay = function (timeout) {\n    return this.then(function (value) {\n        var deferred = defer();\n        setTimeout(function () {\n            deferred.resolve(value);\n        }, timeout);\n        return deferred.promise;\n    });\n};\n\n/**\n * Passes a continuation to a Node function, which is called with the given\n * arguments provided as an array, and returns a promise.\n *\n *      Q.nfapply(FS.readFile, [__filename])\n *      .then(function (content) {\n *      })\n *\n */\nQ.nfapply = function (callback, args) {\n    return Q(callback).nfapply(args);\n};\n\nPromise.prototype.nfapply = function (args) {\n    var deferred = defer();\n    var nodeArgs = array_slice(args);\n    nodeArgs.push(deferred.makeNodeResolver());\n    this.fapply(nodeArgs).fail(deferred.reject);\n    return deferred.promise;\n};\n\n/**\n * Passes a continuation to a Node function, which is called with the given\n * arguments provided individually, and returns a promise.\n * @example\n * Q.nfcall(FS.readFile, __filename)\n * .then(function (content) {\n * })\n *\n */\nQ.nfcall = function (callback /*...args*/) {\n    var args = array_slice(arguments, 1);\n    return Q(callback).nfapply(args);\n};\n\nPromise.prototype.nfcall = function (/*...args*/) {\n    var nodeArgs = array_slice(arguments);\n    var deferred = defer();\n    nodeArgs.push(deferred.makeNodeResolver());\n    this.fapply(nodeArgs).fail(deferred.reject);\n    return deferred.promise;\n};\n\n/**\n * Wraps a NodeJS continuation passing function and returns an equivalent\n * version that returns a promise.\n * @example\n * Q.nfbind(FS.readFile, __filename)(\"utf-8\")\n * .then(console.log)\n * .done()\n */\nQ.nfbind =\nQ.denodeify = function (callback /*...args*/) {\n    if (callback === undefined) {\n        throw new Error(\"Q can't wrap an undefined function\");\n    }\n    var baseArgs = array_slice(arguments, 1);\n    return function () {\n        var nodeArgs = baseArgs.concat(array_slice(arguments));\n        var deferred = defer();\n        nodeArgs.push(deferred.makeNodeResolver());\n        Q(callback).fapply(nodeArgs).fail(deferred.reject);\n        return deferred.promise;\n    };\n};\n\nPromise.prototype.nfbind =\nPromise.prototype.denodeify = function (/*...args*/) {\n    var args = array_slice(arguments);\n    args.unshift(this);\n    return Q.denodeify.apply(void 0, args);\n};\n\nQ.nbind = function (callback, thisp /*...args*/) {\n    var baseArgs = array_slice(arguments, 2);\n    return function () {\n        var nodeArgs = baseArgs.concat(array_slice(arguments));\n        var deferred = defer();\n        nodeArgs.push(deferred.makeNodeResolver());\n        function bound() {\n            return callback.apply(thisp, arguments);\n        }\n        Q(bound).fapply(nodeArgs).fail(deferred.reject);\n        return deferred.promise;\n    };\n};\n\nPromise.prototype.nbind = function (/*thisp, ...args*/) {\n    var args = array_slice(arguments, 0);\n    args.unshift(this);\n    return Q.nbind.apply(void 0, args);\n};\n\n/**\n * Calls a method of a Node-style object that accepts a Node-style\n * callback with a given array of arguments, plus a provided callback.\n * @param object an object that has the named method\n * @param {String} name name of the method of object\n * @param {Array} args arguments to pass to the method; the callback\n * will be provided by Q and appended to these arguments.\n * @returns a promise for the value or error\n */\nQ.nmapply = // XXX As proposed by \"Redsandro\"\nQ.npost = function (object, name, args) {\n    return Q(object).npost(name, args);\n};\n\nPromise.prototype.nmapply = // XXX As proposed by \"Redsandro\"\nPromise.prototype.npost = function (name, args) {\n    var nodeArgs = array_slice(args || []);\n    var deferred = defer();\n    nodeArgs.push(deferred.makeNodeResolver());\n    this.dispatch(\"post\", [name, nodeArgs]).fail(deferred.reject);\n    return deferred.promise;\n};\n\n/**\n * Calls a method of a Node-style object that accepts a Node-style\n * callback, forwarding the given variadic arguments, plus a provided\n * callback argument.\n * @param object an object that has the named method\n * @param {String} name name of the method of object\n * @param ...args arguments to pass to the method; the callback will\n * be provided by Q and appended to these arguments.\n * @returns a promise for the value or error\n */\nQ.nsend = // XXX Based on Mark Miller's proposed \"send\"\nQ.nmcall = // XXX Based on \"Redsandro's\" proposal\nQ.ninvoke = function (object, name /*...args*/) {\n    var nodeArgs = array_slice(arguments, 2);\n    var deferred = defer();\n    nodeArgs.push(deferred.makeNodeResolver());\n    Q(object).dispatch(\"post\", [name, nodeArgs]).fail(deferred.reject);\n    return deferred.promise;\n};\n\nPromise.prototype.nsend = // XXX Based on Mark Miller's proposed \"send\"\nPromise.prototype.nmcall = // XXX Based on \"Redsandro's\" proposal\nPromise.prototype.ninvoke = function (name /*...args*/) {\n    var nodeArgs = array_slice(arguments, 1);\n    var deferred = defer();\n    nodeArgs.push(deferred.makeNodeResolver());\n    this.dispatch(\"post\", [name, nodeArgs]).fail(deferred.reject);\n    return deferred.promise;\n};\n\n/**\n * If a function would like to support both Node continuation-passing-style and\n * promise-returning-style, it can end its internal promise chain with\n * `nodeify(nodeback)`, forwarding the optional nodeback argument.  If the user\n * elects to use a nodeback, the result will be sent there.  If they do not\n * pass a nodeback, they will receive the result promise.\n * @param object a result (or a promise for a result)\n * @param {Function} nodeback a Node.js-style callback\n * @returns either the promise or nothing\n */\nQ.nodeify = nodeify;\nfunction nodeify(object, nodeback) {\n    return Q(object).nodeify(nodeback);\n}\n\nPromise.prototype.nodeify = function (nodeback) {\n    if (nodeback) {\n        this.then(function (value) {\n            Q.nextTick(function () {\n                nodeback(null, value);\n            });\n        }, function (error) {\n            Q.nextTick(function () {\n                nodeback(error);\n            });\n        });\n    } else {\n        return this;\n    }\n};\n\nQ.noConflict = function() {\n    throw new Error(\"Q.noConflict only works when Q is used as a global\");\n};\n\n// All code before this point will be filtered from stack traces.\nvar qEndingLine = captureLine();\n\nreturn Q;\n\n});\n\n\n//# sourceURL=webpack:///./node_modules/q/q.js?");
+// vim:ts=4:sts=4:sw=4:
+/*!
+ *
+ * Copyright 2009-2017 Kris Kowal under the terms of the MIT
+ * license found at https://github.com/kriskowal/q/blob/v1/LICENSE
+ *
+ * With parts by Tyler Close
+ * Copyright 2007-2009 Tyler Close under the terms of the MIT X license found
+ * at http://www.opensource.org/licenses/mit-license.html
+ * Forked at ref_send.js version: 2009-05-11
+ *
+ * With parts by Mark Miller
+ * Copyright (C) 2011 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+(function (definition) {
+    "use strict";
+
+    // This file will function properly as a <script> tag, or a module
+    // using CommonJS and NodeJS or RequireJS module formats.  In
+    // Common/Node/RequireJS, the module exports the Q API and when
+    // executed as a simple <script>, it creates a Q global instead.
+
+    // Montage Require
+    if (typeof bootstrap === "function") {
+        bootstrap("promise", definition);
+
+    // CommonJS
+    } else if (true) {
+        module.exports = definition();
+
+    // RequireJS
+    } else { var previousQ, global; }
+
+})(function () {
+"use strict";
+
+var hasStacks = false;
+try {
+    throw new Error();
+} catch (e) {
+    hasStacks = !!e.stack;
+}
+
+// All code after this point will be filtered from stack traces reported
+// by Q.
+var qStartingLine = captureLine();
+var qFileName;
+
+// shims
+
+// used for fallback in "allResolved"
+var noop = function () {};
+
+// Use the fastest possible means to execute a task in a future turn
+// of the event loop.
+var nextTick =(function () {
+    // linked list of tasks (single, with head node)
+    var head = {task: void 0, next: null};
+    var tail = head;
+    var flushing = false;
+    var requestTick = void 0;
+    var isNodeJS = false;
+    // queue for late tasks, used by unhandled rejection tracking
+    var laterQueue = [];
+
+    function flush() {
+        /* jshint loopfunc: true */
+        var task, domain;
+
+        while (head.next) {
+            head = head.next;
+            task = head.task;
+            head.task = void 0;
+            domain = head.domain;
+
+            if (domain) {
+                head.domain = void 0;
+                domain.enter();
+            }
+            runSingle(task, domain);
+
+        }
+        while (laterQueue.length) {
+            task = laterQueue.pop();
+            runSingle(task);
+        }
+        flushing = false;
+    }
+    // runs a single function in the async queue
+    function runSingle(task, domain) {
+        try {
+            task();
+
+        } catch (e) {
+            if (isNodeJS) {
+                // In node, uncaught exceptions are considered fatal errors.
+                // Re-throw them synchronously to interrupt flushing!
+
+                // Ensure continuation if the uncaught exception is suppressed
+                // listening "uncaughtException" events (as domains does).
+                // Continue in next event to avoid tick recursion.
+                if (domain) {
+                    domain.exit();
+                }
+                setTimeout(flush, 0);
+                if (domain) {
+                    domain.enter();
+                }
+
+                throw e;
+
+            } else {
+                // In browsers, uncaught exceptions are not fatal.
+                // Re-throw them asynchronously to avoid slow-downs.
+                setTimeout(function () {
+                    throw e;
+                }, 0);
+            }
+        }
+
+        if (domain) {
+            domain.exit();
+        }
+    }
+
+    nextTick = function (task) {
+        tail = tail.next = {
+            task: task,
+            domain: isNodeJS && process.domain,
+            next: null
+        };
+
+        if (!flushing) {
+            flushing = true;
+            requestTick();
+        }
+    };
+
+    if (typeof process === "object" &&
+        process.toString() === "[object process]" && process.nextTick) {
+        // Ensure Q is in a real Node environment, with a `process.nextTick`.
+        // To see through fake Node environments:
+        // * Mocha test runner - exposes a `process` global without a `nextTick`
+        // * Browserify - exposes a `process.nexTick` function that uses
+        //   `setTimeout`. In this case `setImmediate` is preferred because
+        //    it is faster. Browserify's `process.toString()` yields
+        //   "[object Object]", while in a real Node environment
+        //   `process.toString()` yields "[object process]".
+        isNodeJS = true;
+
+        requestTick = function () {
+            process.nextTick(flush);
+        };
+
+    } else if (typeof setImmediate === "function") {
+        // In IE10, Node.js 0.9+, or https://github.com/NobleJS/setImmediate
+        if (typeof window !== "undefined") {
+            requestTick = setImmediate.bind(window, flush);
+        } else {
+            requestTick = function () {
+                setImmediate(flush);
+            };
+        }
+
+    } else if (typeof MessageChannel !== "undefined") {
+        // modern browsers
+        // http://www.nonblocking.io/2011/06/windownexttick.html
+        var channel = new MessageChannel();
+        // At least Safari Version 6.0.5 (8536.30.1) intermittently cannot create
+        // working message ports the first time a page loads.
+        channel.port1.onmessage = function () {
+            requestTick = requestPortTick;
+            channel.port1.onmessage = flush;
+            flush();
+        };
+        var requestPortTick = function () {
+            // Opera requires us to provide a message payload, regardless of
+            // whether we use it.
+            channel.port2.postMessage(0);
+        };
+        requestTick = function () {
+            setTimeout(flush, 0);
+            requestPortTick();
+        };
+
+    } else {
+        // old browsers
+        requestTick = function () {
+            setTimeout(flush, 0);
+        };
+    }
+    // runs a task after all other tasks have been run
+    // this is useful for unhandled rejection tracking that needs to happen
+    // after all `then`d tasks have been run.
+    nextTick.runAfter = function (task) {
+        laterQueue.push(task);
+        if (!flushing) {
+            flushing = true;
+            requestTick();
+        }
+    };
+    return nextTick;
+})();
+
+// Attempt to make generics safe in the face of downstream
+// modifications.
+// There is no situation where this is necessary.
+// If you need a security guarantee, these primordials need to be
+// deeply frozen anyway, and if you don’t need a security guarantee,
+// this is just plain paranoid.
+// However, this **might** have the nice side-effect of reducing the size of
+// the minified code by reducing x.call() to merely x()
+// See Mark Miller’s explanation of what this does.
+// http://wiki.ecmascript.org/doku.php?id=conventions:safe_meta_programming
+var call = Function.call;
+function uncurryThis(f) {
+    return function () {
+        return call.apply(f, arguments);
+    };
+}
+// This is equivalent, but slower:
+// uncurryThis = Function_bind.bind(Function_bind.call);
+// http://jsperf.com/uncurrythis
+
+var array_slice = uncurryThis(Array.prototype.slice);
+
+var array_reduce = uncurryThis(
+    Array.prototype.reduce || function (callback, basis) {
+        var index = 0,
+            length = this.length;
+        // concerning the initial value, if one is not provided
+        if (arguments.length === 1) {
+            // seek to the first value in the array, accounting
+            // for the possibility that is is a sparse array
+            do {
+                if (index in this) {
+                    basis = this[index++];
+                    break;
+                }
+                if (++index >= length) {
+                    throw new TypeError();
+                }
+            } while (1);
+        }
+        // reduce
+        for (; index < length; index++) {
+            // account for the possibility that the array is sparse
+            if (index in this) {
+                basis = callback(basis, this[index], index);
+            }
+        }
+        return basis;
+    }
+);
+
+var array_indexOf = uncurryThis(
+    Array.prototype.indexOf || function (value) {
+        // not a very good shim, but good enough for our one use of it
+        for (var i = 0; i < this.length; i++) {
+            if (this[i] === value) {
+                return i;
+            }
+        }
+        return -1;
+    }
+);
+
+var array_map = uncurryThis(
+    Array.prototype.map || function (callback, thisp) {
+        var self = this;
+        var collect = [];
+        array_reduce(self, function (undefined, value, index) {
+            collect.push(callback.call(thisp, value, index, self));
+        }, void 0);
+        return collect;
+    }
+);
+
+var object_create = Object.create || function (prototype) {
+    function Type() { }
+    Type.prototype = prototype;
+    return new Type();
+};
+
+var object_defineProperty = Object.defineProperty || function (obj, prop, descriptor) {
+    obj[prop] = descriptor.value;
+    return obj;
+};
+
+var object_hasOwnProperty = uncurryThis(Object.prototype.hasOwnProperty);
+
+var object_keys = Object.keys || function (object) {
+    var keys = [];
+    for (var key in object) {
+        if (object_hasOwnProperty(object, key)) {
+            keys.push(key);
+        }
+    }
+    return keys;
+};
+
+var object_toString = uncurryThis(Object.prototype.toString);
+
+function isObject(value) {
+    return value === Object(value);
+}
+
+// generator related shims
+
+// FIXME: Remove this function once ES6 generators are in SpiderMonkey.
+function isStopIteration(exception) {
+    return (
+        object_toString(exception) === "[object StopIteration]" ||
+        exception instanceof QReturnValue
+    );
+}
+
+// FIXME: Remove this helper and Q.return once ES6 generators are in
+// SpiderMonkey.
+var QReturnValue;
+if (typeof ReturnValue !== "undefined") {
+    QReturnValue = ReturnValue;
+} else {
+    QReturnValue = function (value) {
+        this.value = value;
+    };
+}
+
+// long stack traces
+
+var STACK_JUMP_SEPARATOR = "From previous event:";
+
+function makeStackTraceLong(error, promise) {
+    // If possible, transform the error stack trace by removing Node and Q
+    // cruft, then concatenating with the stack trace of `promise`. See #57.
+    if (hasStacks &&
+        promise.stack &&
+        typeof error === "object" &&
+        error !== null &&
+        error.stack
+    ) {
+        var stacks = [];
+        for (var p = promise; !!p; p = p.source) {
+            if (p.stack && (!error.__minimumStackCounter__ || error.__minimumStackCounter__ > p.stackCounter)) {
+                object_defineProperty(error, "__minimumStackCounter__", {value: p.stackCounter, configurable: true});
+                stacks.unshift(p.stack);
+            }
+        }
+        stacks.unshift(error.stack);
+
+        var concatedStacks = stacks.join("\n" + STACK_JUMP_SEPARATOR + "\n");
+        var stack = filterStackString(concatedStacks);
+        object_defineProperty(error, "stack", {value: stack, configurable: true});
+    }
+}
+
+function filterStackString(stackString) {
+    var lines = stackString.split("\n");
+    var desiredLines = [];
+    for (var i = 0; i < lines.length; ++i) {
+        var line = lines[i];
+
+        if (!isInternalFrame(line) && !isNodeFrame(line) && line) {
+            desiredLines.push(line);
+        }
+    }
+    return desiredLines.join("\n");
+}
+
+function isNodeFrame(stackLine) {
+    return stackLine.indexOf("(module.js:") !== -1 ||
+           stackLine.indexOf("(node.js:") !== -1;
+}
+
+function getFileNameAndLineNumber(stackLine) {
+    // Named functions: "at functionName (filename:lineNumber:columnNumber)"
+    // In IE10 function name can have spaces ("Anonymous function") O_o
+    var attempt1 = /at .+ \((.+):(\d+):(?:\d+)\)$/.exec(stackLine);
+    if (attempt1) {
+        return [attempt1[1], Number(attempt1[2])];
+    }
+
+    // Anonymous functions: "at filename:lineNumber:columnNumber"
+    var attempt2 = /at ([^ ]+):(\d+):(?:\d+)$/.exec(stackLine);
+    if (attempt2) {
+        return [attempt2[1], Number(attempt2[2])];
+    }
+
+    // Firefox style: "function@filename:lineNumber or @filename:lineNumber"
+    var attempt3 = /.*@(.+):(\d+)$/.exec(stackLine);
+    if (attempt3) {
+        return [attempt3[1], Number(attempt3[2])];
+    }
+}
+
+function isInternalFrame(stackLine) {
+    var fileNameAndLineNumber = getFileNameAndLineNumber(stackLine);
+
+    if (!fileNameAndLineNumber) {
+        return false;
+    }
+
+    var fileName = fileNameAndLineNumber[0];
+    var lineNumber = fileNameAndLineNumber[1];
+
+    return fileName === qFileName &&
+        lineNumber >= qStartingLine &&
+        lineNumber <= qEndingLine;
+}
+
+// discover own file name and line number range for filtering stack
+// traces
+function captureLine() {
+    if (!hasStacks) {
+        return;
+    }
+
+    try {
+        throw new Error();
+    } catch (e) {
+        var lines = e.stack.split("\n");
+        var firstLine = lines[0].indexOf("@") > 0 ? lines[1] : lines[2];
+        var fileNameAndLineNumber = getFileNameAndLineNumber(firstLine);
+        if (!fileNameAndLineNumber) {
+            return;
+        }
+
+        qFileName = fileNameAndLineNumber[0];
+        return fileNameAndLineNumber[1];
+    }
+}
+
+function deprecate(callback, name, alternative) {
+    return function () {
+        if (typeof console !== "undefined" &&
+            typeof console.warn === "function") {
+            console.warn(name + " is deprecated, use " + alternative +
+                         " instead.", new Error("").stack);
+        }
+        return callback.apply(callback, arguments);
+    };
+}
+
+// end of shims
+// beginning of real work
+
+/**
+ * Constructs a promise for an immediate reference, passes promises through, or
+ * coerces promises from different systems.
+ * @param value immediate reference or promise
+ */
+function Q(value) {
+    // If the object is already a Promise, return it directly.  This enables
+    // the resolve function to both be used to created references from objects,
+    // but to tolerably coerce non-promises to promises.
+    if (value instanceof Promise) {
+        return value;
+    }
+
+    // assimilate thenables
+    if (isPromiseAlike(value)) {
+        return coerce(value);
+    } else {
+        return fulfill(value);
+    }
+}
+Q.resolve = Q;
+
+/**
+ * Performs a task in a future turn of the event loop.
+ * @param {Function} task
+ */
+Q.nextTick = nextTick;
+
+/**
+ * Controls whether or not long stack traces will be on
+ */
+Q.longStackSupport = false;
+
+/**
+ * The counter is used to determine the stopping point for building
+ * long stack traces. In makeStackTraceLong we walk backwards through
+ * the linked list of promises, only stacks which were created before
+ * the rejection are concatenated.
+ */
+var longStackCounter = 1;
+
+// enable long stacks if Q_DEBUG is set
+if (typeof process === "object" && process && process.env && process.env.Q_DEBUG) {
+    Q.longStackSupport = true;
+}
+
+/**
+ * Constructs a {promise, resolve, reject} object.
+ *
+ * `resolve` is a callback to invoke with a more resolved value for the
+ * promise. To fulfill the promise, invoke `resolve` with any value that is
+ * not a thenable. To reject the promise, invoke `resolve` with a rejected
+ * thenable, or invoke `reject` with the reason directly. To resolve the
+ * promise to another thenable, thus putting it in the same state, invoke
+ * `resolve` with that other thenable.
+ */
+Q.defer = defer;
+function defer() {
+    // if "messages" is an "Array", that indicates that the promise has not yet
+    // been resolved.  If it is "undefined", it has been resolved.  Each
+    // element of the messages array is itself an array of complete arguments to
+    // forward to the resolved promise.  We coerce the resolution value to a
+    // promise using the `resolve` function because it handles both fully
+    // non-thenable values and other thenables gracefully.
+    var messages = [], progressListeners = [], resolvedPromise;
+
+    var deferred = object_create(defer.prototype);
+    var promise = object_create(Promise.prototype);
+
+    promise.promiseDispatch = function (resolve, op, operands) {
+        var args = array_slice(arguments);
+        if (messages) {
+            messages.push(args);
+            if (op === "when" && operands[1]) { // progress operand
+                progressListeners.push(operands[1]);
+            }
+        } else {
+            Q.nextTick(function () {
+                resolvedPromise.promiseDispatch.apply(resolvedPromise, args);
+            });
+        }
+    };
+
+    // XXX deprecated
+    promise.valueOf = function () {
+        if (messages) {
+            return promise;
+        }
+        var nearerValue = nearer(resolvedPromise);
+        if (isPromise(nearerValue)) {
+            resolvedPromise = nearerValue; // shorten chain
+        }
+        return nearerValue;
+    };
+
+    promise.inspect = function () {
+        if (!resolvedPromise) {
+            return { state: "pending" };
+        }
+        return resolvedPromise.inspect();
+    };
+
+    if (Q.longStackSupport && hasStacks) {
+        try {
+            throw new Error();
+        } catch (e) {
+            // NOTE: don't try to use `Error.captureStackTrace` or transfer the
+            // accessor around; that causes memory leaks as per GH-111. Just
+            // reify the stack trace as a string ASAP.
+            //
+            // At the same time, cut off the first line; it's always just
+            // "[object Promise]\n", as per the `toString`.
+            promise.stack = e.stack.substring(e.stack.indexOf("\n") + 1);
+            promise.stackCounter = longStackCounter++;
+        }
+    }
+
+    // NOTE: we do the checks for `resolvedPromise` in each method, instead of
+    // consolidating them into `become`, since otherwise we'd create new
+    // promises with the lines `become(whatever(value))`. See e.g. GH-252.
+
+    function become(newPromise) {
+        resolvedPromise = newPromise;
+
+        if (Q.longStackSupport && hasStacks) {
+            // Only hold a reference to the new promise if long stacks
+            // are enabled to reduce memory usage
+            promise.source = newPromise;
+        }
+
+        array_reduce(messages, function (undefined, message) {
+            Q.nextTick(function () {
+                newPromise.promiseDispatch.apply(newPromise, message);
+            });
+        }, void 0);
+
+        messages = void 0;
+        progressListeners = void 0;
+    }
+
+    deferred.promise = promise;
+    deferred.resolve = function (value) {
+        if (resolvedPromise) {
+            return;
+        }
+
+        become(Q(value));
+    };
+
+    deferred.fulfill = function (value) {
+        if (resolvedPromise) {
+            return;
+        }
+
+        become(fulfill(value));
+    };
+    deferred.reject = function (reason) {
+        if (resolvedPromise) {
+            return;
+        }
+
+        become(reject(reason));
+    };
+    deferred.notify = function (progress) {
+        if (resolvedPromise) {
+            return;
+        }
+
+        array_reduce(progressListeners, function (undefined, progressListener) {
+            Q.nextTick(function () {
+                progressListener(progress);
+            });
+        }, void 0);
+    };
+
+    return deferred;
+}
+
+/**
+ * Creates a Node-style callback that will resolve or reject the deferred
+ * promise.
+ * @returns a nodeback
+ */
+defer.prototype.makeNodeResolver = function () {
+    var self = this;
+    return function (error, value) {
+        if (error) {
+            self.reject(error);
+        } else if (arguments.length > 2) {
+            self.resolve(array_slice(arguments, 1));
+        } else {
+            self.resolve(value);
+        }
+    };
+};
+
+/**
+ * @param resolver {Function} a function that returns nothing and accepts
+ * the resolve, reject, and notify functions for a deferred.
+ * @returns a promise that may be resolved with the given resolve and reject
+ * functions, or rejected by a thrown exception in resolver
+ */
+Q.Promise = promise; // ES6
+Q.promise = promise;
+function promise(resolver) {
+    if (typeof resolver !== "function") {
+        throw new TypeError("resolver must be a function.");
+    }
+    var deferred = defer();
+    try {
+        resolver(deferred.resolve, deferred.reject, deferred.notify);
+    } catch (reason) {
+        deferred.reject(reason);
+    }
+    return deferred.promise;
+}
+
+promise.race = race; // ES6
+promise.all = all; // ES6
+promise.reject = reject; // ES6
+promise.resolve = Q; // ES6
+
+// XXX experimental.  This method is a way to denote that a local value is
+// serializable and should be immediately dispatched to a remote upon request,
+// instead of passing a reference.
+Q.passByCopy = function (object) {
+    //freeze(object);
+    //passByCopies.set(object, true);
+    return object;
+};
+
+Promise.prototype.passByCopy = function () {
+    //freeze(object);
+    //passByCopies.set(object, true);
+    return this;
+};
+
+/**
+ * If two promises eventually fulfill to the same value, promises that value,
+ * but otherwise rejects.
+ * @param x {Any*}
+ * @param y {Any*}
+ * @returns {Any*} a promise for x and y if they are the same, but a rejection
+ * otherwise.
+ *
+ */
+Q.join = function (x, y) {
+    return Q(x).join(y);
+};
+
+Promise.prototype.join = function (that) {
+    return Q([this, that]).spread(function (x, y) {
+        if (x === y) {
+            // TODO: "===" should be Object.is or equiv
+            return x;
+        } else {
+            throw new Error("Q can't join: not the same: " + x + " " + y);
+        }
+    });
+};
+
+/**
+ * Returns a promise for the first of an array of promises to become settled.
+ * @param answers {Array[Any*]} promises to race
+ * @returns {Any*} the first promise to be settled
+ */
+Q.race = race;
+function race(answerPs) {
+    return promise(function (resolve, reject) {
+        // Switch to this once we can assume at least ES5
+        // answerPs.forEach(function (answerP) {
+        //     Q(answerP).then(resolve, reject);
+        // });
+        // Use this in the meantime
+        for (var i = 0, len = answerPs.length; i < len; i++) {
+            Q(answerPs[i]).then(resolve, reject);
+        }
+    });
+}
+
+Promise.prototype.race = function () {
+    return this.then(Q.race);
+};
+
+/**
+ * Constructs a Promise with a promise descriptor object and optional fallback
+ * function.  The descriptor contains methods like when(rejected), get(name),
+ * set(name, value), post(name, args), and delete(name), which all
+ * return either a value, a promise for a value, or a rejection.  The fallback
+ * accepts the operation name, a resolver, and any further arguments that would
+ * have been forwarded to the appropriate method above had a method been
+ * provided with the proper name.  The API makes no guarantees about the nature
+ * of the returned object, apart from that it is usable whereever promises are
+ * bought and sold.
+ */
+Q.makePromise = Promise;
+function Promise(descriptor, fallback, inspect) {
+    if (fallback === void 0) {
+        fallback = function (op) {
+            return reject(new Error(
+                "Promise does not support operation: " + op
+            ));
+        };
+    }
+    if (inspect === void 0) {
+        inspect = function () {
+            return {state: "unknown"};
+        };
+    }
+
+    var promise = object_create(Promise.prototype);
+
+    promise.promiseDispatch = function (resolve, op, args) {
+        var result;
+        try {
+            if (descriptor[op]) {
+                result = descriptor[op].apply(promise, args);
+            } else {
+                result = fallback.call(promise, op, args);
+            }
+        } catch (exception) {
+            result = reject(exception);
+        }
+        if (resolve) {
+            resolve(result);
+        }
+    };
+
+    promise.inspect = inspect;
+
+    // XXX deprecated `valueOf` and `exception` support
+    if (inspect) {
+        var inspected = inspect();
+        if (inspected.state === "rejected") {
+            promise.exception = inspected.reason;
+        }
+
+        promise.valueOf = function () {
+            var inspected = inspect();
+            if (inspected.state === "pending" ||
+                inspected.state === "rejected") {
+                return promise;
+            }
+            return inspected.value;
+        };
+    }
+
+    return promise;
+}
+
+Promise.prototype.toString = function () {
+    return "[object Promise]";
+};
+
+Promise.prototype.then = function (fulfilled, rejected, progressed) {
+    var self = this;
+    var deferred = defer();
+    var done = false;   // ensure the untrusted promise makes at most a
+                        // single call to one of the callbacks
+
+    function _fulfilled(value) {
+        try {
+            return typeof fulfilled === "function" ? fulfilled(value) : value;
+        } catch (exception) {
+            return reject(exception);
+        }
+    }
+
+    function _rejected(exception) {
+        if (typeof rejected === "function") {
+            makeStackTraceLong(exception, self);
+            try {
+                return rejected(exception);
+            } catch (newException) {
+                return reject(newException);
+            }
+        }
+        return reject(exception);
+    }
+
+    function _progressed(value) {
+        return typeof progressed === "function" ? progressed(value) : value;
+    }
+
+    Q.nextTick(function () {
+        self.promiseDispatch(function (value) {
+            if (done) {
+                return;
+            }
+            done = true;
+
+            deferred.resolve(_fulfilled(value));
+        }, "when", [function (exception) {
+            if (done) {
+                return;
+            }
+            done = true;
+
+            deferred.resolve(_rejected(exception));
+        }]);
+    });
+
+    // Progress propagator need to be attached in the current tick.
+    self.promiseDispatch(void 0, "when", [void 0, function (value) {
+        var newValue;
+        var threw = false;
+        try {
+            newValue = _progressed(value);
+        } catch (e) {
+            threw = true;
+            if (Q.onerror) {
+                Q.onerror(e);
+            } else {
+                throw e;
+            }
+        }
+
+        if (!threw) {
+            deferred.notify(newValue);
+        }
+    }]);
+
+    return deferred.promise;
+};
+
+Q.tap = function (promise, callback) {
+    return Q(promise).tap(callback);
+};
+
+/**
+ * Works almost like "finally", but not called for rejections.
+ * Original resolution value is passed through callback unaffected.
+ * Callback may return a promise that will be awaited for.
+ * @param {Function} callback
+ * @returns {Q.Promise}
+ * @example
+ * doSomething()
+ *   .then(...)
+ *   .tap(console.log)
+ *   .then(...);
+ */
+Promise.prototype.tap = function (callback) {
+    callback = Q(callback);
+
+    return this.then(function (value) {
+        return callback.fcall(value).thenResolve(value);
+    });
+};
+
+/**
+ * Registers an observer on a promise.
+ *
+ * Guarantees:
+ *
+ * 1. that fulfilled and rejected will be called only once.
+ * 2. that either the fulfilled callback or the rejected callback will be
+ *    called, but not both.
+ * 3. that fulfilled and rejected will not be called in this turn.
+ *
+ * @param value      promise or immediate reference to observe
+ * @param fulfilled  function to be called with the fulfilled value
+ * @param rejected   function to be called with the rejection exception
+ * @param progressed function to be called on any progress notifications
+ * @return promise for the return value from the invoked callback
+ */
+Q.when = when;
+function when(value, fulfilled, rejected, progressed) {
+    return Q(value).then(fulfilled, rejected, progressed);
+}
+
+Promise.prototype.thenResolve = function (value) {
+    return this.then(function () { return value; });
+};
+
+Q.thenResolve = function (promise, value) {
+    return Q(promise).thenResolve(value);
+};
+
+Promise.prototype.thenReject = function (reason) {
+    return this.then(function () { throw reason; });
+};
+
+Q.thenReject = function (promise, reason) {
+    return Q(promise).thenReject(reason);
+};
+
+/**
+ * If an object is not a promise, it is as "near" as possible.
+ * If a promise is rejected, it is as "near" as possible too.
+ * If it’s a fulfilled promise, the fulfillment value is nearer.
+ * If it’s a deferred promise and the deferred has been resolved, the
+ * resolution is "nearer".
+ * @param object
+ * @returns most resolved (nearest) form of the object
+ */
+
+// XXX should we re-do this?
+Q.nearer = nearer;
+function nearer(value) {
+    if (isPromise(value)) {
+        var inspected = value.inspect();
+        if (inspected.state === "fulfilled") {
+            return inspected.value;
+        }
+    }
+    return value;
+}
+
+/**
+ * @returns whether the given object is a promise.
+ * Otherwise it is a fulfilled value.
+ */
+Q.isPromise = isPromise;
+function isPromise(object) {
+    return object instanceof Promise;
+}
+
+Q.isPromiseAlike = isPromiseAlike;
+function isPromiseAlike(object) {
+    return isObject(object) && typeof object.then === "function";
+}
+
+/**
+ * @returns whether the given object is a pending promise, meaning not
+ * fulfilled or rejected.
+ */
+Q.isPending = isPending;
+function isPending(object) {
+    return isPromise(object) && object.inspect().state === "pending";
+}
+
+Promise.prototype.isPending = function () {
+    return this.inspect().state === "pending";
+};
+
+/**
+ * @returns whether the given object is a value or fulfilled
+ * promise.
+ */
+Q.isFulfilled = isFulfilled;
+function isFulfilled(object) {
+    return !isPromise(object) || object.inspect().state === "fulfilled";
+}
+
+Promise.prototype.isFulfilled = function () {
+    return this.inspect().state === "fulfilled";
+};
+
+/**
+ * @returns whether the given object is a rejected promise.
+ */
+Q.isRejected = isRejected;
+function isRejected(object) {
+    return isPromise(object) && object.inspect().state === "rejected";
+}
+
+Promise.prototype.isRejected = function () {
+    return this.inspect().state === "rejected";
+};
+
+//// BEGIN UNHANDLED REJECTION TRACKING
+
+// This promise library consumes exceptions thrown in handlers so they can be
+// handled by a subsequent promise.  The exceptions get added to this array when
+// they are created, and removed when they are handled.  Note that in ES6 or
+// shimmed environments, this would naturally be a `Set`.
+var unhandledReasons = [];
+var unhandledRejections = [];
+var reportedUnhandledRejections = [];
+var trackUnhandledRejections = true;
+
+function resetUnhandledRejections() {
+    unhandledReasons.length = 0;
+    unhandledRejections.length = 0;
+
+    if (!trackUnhandledRejections) {
+        trackUnhandledRejections = true;
+    }
+}
+
+function trackRejection(promise, reason) {
+    if (!trackUnhandledRejections) {
+        return;
+    }
+    if (typeof process === "object" && typeof process.emit === "function") {
+        Q.nextTick.runAfter(function () {
+            if (array_indexOf(unhandledRejections, promise) !== -1) {
+                process.emit("unhandledRejection", reason, promise);
+                reportedUnhandledRejections.push(promise);
+            }
+        });
+    }
+
+    unhandledRejections.push(promise);
+    if (reason && typeof reason.stack !== "undefined") {
+        unhandledReasons.push(reason.stack);
+    } else {
+        unhandledReasons.push("(no stack) " + reason);
+    }
+}
+
+function untrackRejection(promise) {
+    if (!trackUnhandledRejections) {
+        return;
+    }
+
+    var at = array_indexOf(unhandledRejections, promise);
+    if (at !== -1) {
+        if (typeof process === "object" && typeof process.emit === "function") {
+            Q.nextTick.runAfter(function () {
+                var atReport = array_indexOf(reportedUnhandledRejections, promise);
+                if (atReport !== -1) {
+                    process.emit("rejectionHandled", unhandledReasons[at], promise);
+                    reportedUnhandledRejections.splice(atReport, 1);
+                }
+            });
+        }
+        unhandledRejections.splice(at, 1);
+        unhandledReasons.splice(at, 1);
+    }
+}
+
+Q.resetUnhandledRejections = resetUnhandledRejections;
+
+Q.getUnhandledReasons = function () {
+    // Make a copy so that consumers can't interfere with our internal state.
+    return unhandledReasons.slice();
+};
+
+Q.stopUnhandledRejectionTracking = function () {
+    resetUnhandledRejections();
+    trackUnhandledRejections = false;
+};
+
+resetUnhandledRejections();
+
+//// END UNHANDLED REJECTION TRACKING
+
+/**
+ * Constructs a rejected promise.
+ * @param reason value describing the failure
+ */
+Q.reject = reject;
+function reject(reason) {
+    var rejection = Promise({
+        "when": function (rejected) {
+            // note that the error has been handled
+            if (rejected) {
+                untrackRejection(this);
+            }
+            return rejected ? rejected(reason) : this;
+        }
+    }, function fallback() {
+        return this;
+    }, function inspect() {
+        return { state: "rejected", reason: reason };
+    });
+
+    // Note that the reason has not been handled.
+    trackRejection(rejection, reason);
+
+    return rejection;
+}
+
+/**
+ * Constructs a fulfilled promise for an immediate reference.
+ * @param value immediate reference
+ */
+Q.fulfill = fulfill;
+function fulfill(value) {
+    return Promise({
+        "when": function () {
+            return value;
+        },
+        "get": function (name) {
+            return value[name];
+        },
+        "set": function (name, rhs) {
+            value[name] = rhs;
+        },
+        "delete": function (name) {
+            delete value[name];
+        },
+        "post": function (name, args) {
+            // Mark Miller proposes that post with no name should apply a
+            // promised function.
+            if (name === null || name === void 0) {
+                return value.apply(void 0, args);
+            } else {
+                return value[name].apply(value, args);
+            }
+        },
+        "apply": function (thisp, args) {
+            return value.apply(thisp, args);
+        },
+        "keys": function () {
+            return object_keys(value);
+        }
+    }, void 0, function inspect() {
+        return { state: "fulfilled", value: value };
+    });
+}
+
+/**
+ * Converts thenables to Q promises.
+ * @param promise thenable promise
+ * @returns a Q promise
+ */
+function coerce(promise) {
+    var deferred = defer();
+    Q.nextTick(function () {
+        try {
+            promise.then(deferred.resolve, deferred.reject, deferred.notify);
+        } catch (exception) {
+            deferred.reject(exception);
+        }
+    });
+    return deferred.promise;
+}
+
+/**
+ * Annotates an object such that it will never be
+ * transferred away from this process over any promise
+ * communication channel.
+ * @param object
+ * @returns promise a wrapping of that object that
+ * additionally responds to the "isDef" message
+ * without a rejection.
+ */
+Q.master = master;
+function master(object) {
+    return Promise({
+        "isDef": function () {}
+    }, function fallback(op, args) {
+        return dispatch(object, op, args);
+    }, function () {
+        return Q(object).inspect();
+    });
+}
+
+/**
+ * Spreads the values of a promised array of arguments into the
+ * fulfillment callback.
+ * @param fulfilled callback that receives variadic arguments from the
+ * promised array
+ * @param rejected callback that receives the exception if the promise
+ * is rejected.
+ * @returns a promise for the return value or thrown exception of
+ * either callback.
+ */
+Q.spread = spread;
+function spread(value, fulfilled, rejected) {
+    return Q(value).spread(fulfilled, rejected);
+}
+
+Promise.prototype.spread = function (fulfilled, rejected) {
+    return this.all().then(function (array) {
+        return fulfilled.apply(void 0, array);
+    }, rejected);
+};
+
+/**
+ * The async function is a decorator for generator functions, turning
+ * them into asynchronous generators.  Although generators are only part
+ * of the newest ECMAScript 6 drafts, this code does not cause syntax
+ * errors in older engines.  This code should continue to work and will
+ * in fact improve over time as the language improves.
+ *
+ * ES6 generators are currently part of V8 version 3.19 with the
+ * --harmony-generators runtime flag enabled.  SpiderMonkey has had them
+ * for longer, but under an older Python-inspired form.  This function
+ * works on both kinds of generators.
+ *
+ * Decorates a generator function such that:
+ *  - it may yield promises
+ *  - execution will continue when that promise is fulfilled
+ *  - the value of the yield expression will be the fulfilled value
+ *  - it returns a promise for the return value (when the generator
+ *    stops iterating)
+ *  - the decorated function returns a promise for the return value
+ *    of the generator or the first rejected promise among those
+ *    yielded.
+ *  - if an error is thrown in the generator, it propagates through
+ *    every following yield until it is caught, or until it escapes
+ *    the generator function altogether, and is translated into a
+ *    rejection for the promise returned by the decorated generator.
+ */
+Q.async = async;
+function async(makeGenerator) {
+    return function () {
+        // when verb is "send", arg is a value
+        // when verb is "throw", arg is an exception
+        function continuer(verb, arg) {
+            var result;
+
+            // Until V8 3.19 / Chromium 29 is released, SpiderMonkey is the only
+            // engine that has a deployed base of browsers that support generators.
+            // However, SM's generators use the Python-inspired semantics of
+            // outdated ES6 drafts.  We would like to support ES6, but we'd also
+            // like to make it possible to use generators in deployed browsers, so
+            // we also support Python-style generators.  At some point we can remove
+            // this block.
+
+            if (typeof StopIteration === "undefined") {
+                // ES6 Generators
+                try {
+                    result = generator[verb](arg);
+                } catch (exception) {
+                    return reject(exception);
+                }
+                if (result.done) {
+                    return Q(result.value);
+                } else {
+                    return when(result.value, callback, errback);
+                }
+            } else {
+                // SpiderMonkey Generators
+                // FIXME: Remove this case when SM does ES6 generators.
+                try {
+                    result = generator[verb](arg);
+                } catch (exception) {
+                    if (isStopIteration(exception)) {
+                        return Q(exception.value);
+                    } else {
+                        return reject(exception);
+                    }
+                }
+                return when(result, callback, errback);
+            }
+        }
+        var generator = makeGenerator.apply(this, arguments);
+        var callback = continuer.bind(continuer, "next");
+        var errback = continuer.bind(continuer, "throw");
+        return callback();
+    };
+}
+
+/**
+ * The spawn function is a small wrapper around async that immediately
+ * calls the generator and also ends the promise chain, so that any
+ * unhandled errors are thrown instead of forwarded to the error
+ * handler. This is useful because it's extremely common to run
+ * generators at the top-level to work with libraries.
+ */
+Q.spawn = spawn;
+function spawn(makeGenerator) {
+    Q.done(Q.async(makeGenerator)());
+}
+
+// FIXME: Remove this interface once ES6 generators are in SpiderMonkey.
+/**
+ * Throws a ReturnValue exception to stop an asynchronous generator.
+ *
+ * This interface is a stop-gap measure to support generator return
+ * values in older Firefox/SpiderMonkey.  In browsers that support ES6
+ * generators like Chromium 29, just use "return" in your generator
+ * functions.
+ *
+ * @param value the return value for the surrounding generator
+ * @throws ReturnValue exception with the value.
+ * @example
+ * // ES6 style
+ * Q.async(function* () {
+ *      var foo = yield getFooPromise();
+ *      var bar = yield getBarPromise();
+ *      return foo + bar;
+ * })
+ * // Older SpiderMonkey style
+ * Q.async(function () {
+ *      var foo = yield getFooPromise();
+ *      var bar = yield getBarPromise();
+ *      Q.return(foo + bar);
+ * })
+ */
+Q["return"] = _return;
+function _return(value) {
+    throw new QReturnValue(value);
+}
+
+/**
+ * The promised function decorator ensures that any promise arguments
+ * are settled and passed as values (`this` is also settled and passed
+ * as a value).  It will also ensure that the result of a function is
+ * always a promise.
+ *
+ * @example
+ * var add = Q.promised(function (a, b) {
+ *     return a + b;
+ * });
+ * add(Q(a), Q(B));
+ *
+ * @param {function} callback The function to decorate
+ * @returns {function} a function that has been decorated.
+ */
+Q.promised = promised;
+function promised(callback) {
+    return function () {
+        return spread([this, all(arguments)], function (self, args) {
+            return callback.apply(self, args);
+        });
+    };
+}
+
+/**
+ * sends a message to a value in a future turn
+ * @param object* the recipient
+ * @param op the name of the message operation, e.g., "when",
+ * @param args further arguments to be forwarded to the operation
+ * @returns result {Promise} a promise for the result of the operation
+ */
+Q.dispatch = dispatch;
+function dispatch(object, op, args) {
+    return Q(object).dispatch(op, args);
+}
+
+Promise.prototype.dispatch = function (op, args) {
+    var self = this;
+    var deferred = defer();
+    Q.nextTick(function () {
+        self.promiseDispatch(deferred.resolve, op, args);
+    });
+    return deferred.promise;
+};
+
+/**
+ * Gets the value of a property in a future turn.
+ * @param object    promise or immediate reference for target object
+ * @param name      name of property to get
+ * @return promise for the property value
+ */
+Q.get = function (object, key) {
+    return Q(object).dispatch("get", [key]);
+};
+
+Promise.prototype.get = function (key) {
+    return this.dispatch("get", [key]);
+};
+
+/**
+ * Sets the value of a property in a future turn.
+ * @param object    promise or immediate reference for object object
+ * @param name      name of property to set
+ * @param value     new value of property
+ * @return promise for the return value
+ */
+Q.set = function (object, key, value) {
+    return Q(object).dispatch("set", [key, value]);
+};
+
+Promise.prototype.set = function (key, value) {
+    return this.dispatch("set", [key, value]);
+};
+
+/**
+ * Deletes a property in a future turn.
+ * @param object    promise or immediate reference for target object
+ * @param name      name of property to delete
+ * @return promise for the return value
+ */
+Q.del = // XXX legacy
+Q["delete"] = function (object, key) {
+    return Q(object).dispatch("delete", [key]);
+};
+
+Promise.prototype.del = // XXX legacy
+Promise.prototype["delete"] = function (key) {
+    return this.dispatch("delete", [key]);
+};
+
+/**
+ * Invokes a method in a future turn.
+ * @param object    promise or immediate reference for target object
+ * @param name      name of method to invoke
+ * @param value     a value to post, typically an array of
+ *                  invocation arguments for promises that
+ *                  are ultimately backed with `resolve` values,
+ *                  as opposed to those backed with URLs
+ *                  wherein the posted value can be any
+ *                  JSON serializable object.
+ * @return promise for the return value
+ */
+// bound locally because it is used by other methods
+Q.mapply = // XXX As proposed by "Redsandro"
+Q.post = function (object, name, args) {
+    return Q(object).dispatch("post", [name, args]);
+};
+
+Promise.prototype.mapply = // XXX As proposed by "Redsandro"
+Promise.prototype.post = function (name, args) {
+    return this.dispatch("post", [name, args]);
+};
+
+/**
+ * Invokes a method in a future turn.
+ * @param object    promise or immediate reference for target object
+ * @param name      name of method to invoke
+ * @param ...args   array of invocation arguments
+ * @return promise for the return value
+ */
+Q.send = // XXX Mark Miller's proposed parlance
+Q.mcall = // XXX As proposed by "Redsandro"
+Q.invoke = function (object, name /*...args*/) {
+    return Q(object).dispatch("post", [name, array_slice(arguments, 2)]);
+};
+
+Promise.prototype.send = // XXX Mark Miller's proposed parlance
+Promise.prototype.mcall = // XXX As proposed by "Redsandro"
+Promise.prototype.invoke = function (name /*...args*/) {
+    return this.dispatch("post", [name, array_slice(arguments, 1)]);
+};
+
+/**
+ * Applies the promised function in a future turn.
+ * @param object    promise or immediate reference for target function
+ * @param args      array of application arguments
+ */
+Q.fapply = function (object, args) {
+    return Q(object).dispatch("apply", [void 0, args]);
+};
+
+Promise.prototype.fapply = function (args) {
+    return this.dispatch("apply", [void 0, args]);
+};
+
+/**
+ * Calls the promised function in a future turn.
+ * @param object    promise or immediate reference for target function
+ * @param ...args   array of application arguments
+ */
+Q["try"] =
+Q.fcall = function (object /* ...args*/) {
+    return Q(object).dispatch("apply", [void 0, array_slice(arguments, 1)]);
+};
+
+Promise.prototype.fcall = function (/*...args*/) {
+    return this.dispatch("apply", [void 0, array_slice(arguments)]);
+};
+
+/**
+ * Binds the promised function, transforming return values into a fulfilled
+ * promise and thrown errors into a rejected one.
+ * @param object    promise or immediate reference for target function
+ * @param ...args   array of application arguments
+ */
+Q.fbind = function (object /*...args*/) {
+    var promise = Q(object);
+    var args = array_slice(arguments, 1);
+    return function fbound() {
+        return promise.dispatch("apply", [
+            this,
+            args.concat(array_slice(arguments))
+        ]);
+    };
+};
+Promise.prototype.fbind = function (/*...args*/) {
+    var promise = this;
+    var args = array_slice(arguments);
+    return function fbound() {
+        return promise.dispatch("apply", [
+            this,
+            args.concat(array_slice(arguments))
+        ]);
+    };
+};
+
+/**
+ * Requests the names of the owned properties of a promised
+ * object in a future turn.
+ * @param object    promise or immediate reference for target object
+ * @return promise for the keys of the eventually settled object
+ */
+Q.keys = function (object) {
+    return Q(object).dispatch("keys", []);
+};
+
+Promise.prototype.keys = function () {
+    return this.dispatch("keys", []);
+};
+
+/**
+ * Turns an array of promises into a promise for an array.  If any of
+ * the promises gets rejected, the whole array is rejected immediately.
+ * @param {Array*} an array (or promise for an array) of values (or
+ * promises for values)
+ * @returns a promise for an array of the corresponding values
+ */
+// By Mark Miller
+// http://wiki.ecmascript.org/doku.php?id=strawman:concurrency&rev=1308776521#allfulfilled
+Q.all = all;
+function all(promises) {
+    return when(promises, function (promises) {
+        var pendingCount = 0;
+        var deferred = defer();
+        array_reduce(promises, function (undefined, promise, index) {
+            var snapshot;
+            if (
+                isPromise(promise) &&
+                (snapshot = promise.inspect()).state === "fulfilled"
+            ) {
+                promises[index] = snapshot.value;
+            } else {
+                ++pendingCount;
+                when(
+                    promise,
+                    function (value) {
+                        promises[index] = value;
+                        if (--pendingCount === 0) {
+                            deferred.resolve(promises);
+                        }
+                    },
+                    deferred.reject,
+                    function (progress) {
+                        deferred.notify({ index: index, value: progress });
+                    }
+                );
+            }
+        }, void 0);
+        if (pendingCount === 0) {
+            deferred.resolve(promises);
+        }
+        return deferred.promise;
+    });
+}
+
+Promise.prototype.all = function () {
+    return all(this);
+};
+
+/**
+ * Returns the first resolved promise of an array. Prior rejected promises are
+ * ignored.  Rejects only if all promises are rejected.
+ * @param {Array*} an array containing values or promises for values
+ * @returns a promise fulfilled with the value of the first resolved promise,
+ * or a rejected promise if all promises are rejected.
+ */
+Q.any = any;
+
+function any(promises) {
+    if (promises.length === 0) {
+        return Q.resolve();
+    }
+
+    var deferred = Q.defer();
+    var pendingCount = 0;
+    array_reduce(promises, function (prev, current, index) {
+        var promise = promises[index];
+
+        pendingCount++;
+
+        when(promise, onFulfilled, onRejected, onProgress);
+        function onFulfilled(result) {
+            deferred.resolve(result);
+        }
+        function onRejected(err) {
+            pendingCount--;
+            if (pendingCount === 0) {
+                var rejection = err || new Error("" + err);
+
+                rejection.message = ("Q can't get fulfillment value from any promise, all " +
+                    "promises were rejected. Last error message: " + rejection.message);
+
+                deferred.reject(rejection);
+            }
+        }
+        function onProgress(progress) {
+            deferred.notify({
+                index: index,
+                value: progress
+            });
+        }
+    }, undefined);
+
+    return deferred.promise;
+}
+
+Promise.prototype.any = function () {
+    return any(this);
+};
+
+/**
+ * Waits for all promises to be settled, either fulfilled or
+ * rejected.  This is distinct from `all` since that would stop
+ * waiting at the first rejection.  The promise returned by
+ * `allResolved` will never be rejected.
+ * @param promises a promise for an array (or an array) of promises
+ * (or values)
+ * @return a promise for an array of promises
+ */
+Q.allResolved = deprecate(allResolved, "allResolved", "allSettled");
+function allResolved(promises) {
+    return when(promises, function (promises) {
+        promises = array_map(promises, Q);
+        return when(all(array_map(promises, function (promise) {
+            return when(promise, noop, noop);
+        })), function () {
+            return promises;
+        });
+    });
+}
+
+Promise.prototype.allResolved = function () {
+    return allResolved(this);
+};
+
+/**
+ * @see Promise#allSettled
+ */
+Q.allSettled = allSettled;
+function allSettled(promises) {
+    return Q(promises).allSettled();
+}
+
+/**
+ * Turns an array of promises into a promise for an array of their states (as
+ * returned by `inspect`) when they have all settled.
+ * @param {Array[Any*]} values an array (or promise for an array) of values (or
+ * promises for values)
+ * @returns {Array[State]} an array of states for the respective values.
+ */
+Promise.prototype.allSettled = function () {
+    return this.then(function (promises) {
+        return all(array_map(promises, function (promise) {
+            promise = Q(promise);
+            function regardless() {
+                return promise.inspect();
+            }
+            return promise.then(regardless, regardless);
+        }));
+    });
+};
+
+/**
+ * Captures the failure of a promise, giving an oportunity to recover
+ * with a callback.  If the given promise is fulfilled, the returned
+ * promise is fulfilled.
+ * @param {Any*} promise for something
+ * @param {Function} callback to fulfill the returned promise if the
+ * given promise is rejected
+ * @returns a promise for the return value of the callback
+ */
+Q.fail = // XXX legacy
+Q["catch"] = function (object, rejected) {
+    return Q(object).then(void 0, rejected);
+};
+
+Promise.prototype.fail = // XXX legacy
+Promise.prototype["catch"] = function (rejected) {
+    return this.then(void 0, rejected);
+};
+
+/**
+ * Attaches a listener that can respond to progress notifications from a
+ * promise's originating deferred. This listener receives the exact arguments
+ * passed to ``deferred.notify``.
+ * @param {Any*} promise for something
+ * @param {Function} callback to receive any progress notifications
+ * @returns the given promise, unchanged
+ */
+Q.progress = progress;
+function progress(object, progressed) {
+    return Q(object).then(void 0, void 0, progressed);
+}
+
+Promise.prototype.progress = function (progressed) {
+    return this.then(void 0, void 0, progressed);
+};
+
+/**
+ * Provides an opportunity to observe the settling of a promise,
+ * regardless of whether the promise is fulfilled or rejected.  Forwards
+ * the resolution to the returned promise when the callback is done.
+ * The callback can return a promise to defer completion.
+ * @param {Any*} promise
+ * @param {Function} callback to observe the resolution of the given
+ * promise, takes no arguments.
+ * @returns a promise for the resolution of the given promise when
+ * ``fin`` is done.
+ */
+Q.fin = // XXX legacy
+Q["finally"] = function (object, callback) {
+    return Q(object)["finally"](callback);
+};
+
+Promise.prototype.fin = // XXX legacy
+Promise.prototype["finally"] = function (callback) {
+    if (!callback || typeof callback.apply !== "function") {
+        throw new Error("Q can't apply finally callback");
+    }
+    callback = Q(callback);
+    return this.then(function (value) {
+        return callback.fcall().then(function () {
+            return value;
+        });
+    }, function (reason) {
+        // TODO attempt to recycle the rejection with "this".
+        return callback.fcall().then(function () {
+            throw reason;
+        });
+    });
+};
+
+/**
+ * Terminates a chain of promises, forcing rejections to be
+ * thrown as exceptions.
+ * @param {Any*} promise at the end of a chain of promises
+ * @returns nothing
+ */
+Q.done = function (object, fulfilled, rejected, progress) {
+    return Q(object).done(fulfilled, rejected, progress);
+};
+
+Promise.prototype.done = function (fulfilled, rejected, progress) {
+    var onUnhandledError = function (error) {
+        // forward to a future turn so that ``when``
+        // does not catch it and turn it into a rejection.
+        Q.nextTick(function () {
+            makeStackTraceLong(error, promise);
+            if (Q.onerror) {
+                Q.onerror(error);
+            } else {
+                throw error;
+            }
+        });
+    };
+
+    // Avoid unnecessary `nextTick`ing via an unnecessary `when`.
+    var promise = fulfilled || rejected || progress ?
+        this.then(fulfilled, rejected, progress) :
+        this;
+
+    if (typeof process === "object" && process && process.domain) {
+        onUnhandledError = process.domain.bind(onUnhandledError);
+    }
+
+    promise.then(void 0, onUnhandledError);
+};
+
+/**
+ * Causes a promise to be rejected if it does not get fulfilled before
+ * some milliseconds time out.
+ * @param {Any*} promise
+ * @param {Number} milliseconds timeout
+ * @param {Any*} custom error message or Error object (optional)
+ * @returns a promise for the resolution of the given promise if it is
+ * fulfilled before the timeout, otherwise rejected.
+ */
+Q.timeout = function (object, ms, error) {
+    return Q(object).timeout(ms, error);
+};
+
+Promise.prototype.timeout = function (ms, error) {
+    var deferred = defer();
+    var timeoutId = setTimeout(function () {
+        if (!error || "string" === typeof error) {
+            error = new Error(error || "Timed out after " + ms + " ms");
+            error.code = "ETIMEDOUT";
+        }
+        deferred.reject(error);
+    }, ms);
+
+    this.then(function (value) {
+        clearTimeout(timeoutId);
+        deferred.resolve(value);
+    }, function (exception) {
+        clearTimeout(timeoutId);
+        deferred.reject(exception);
+    }, deferred.notify);
+
+    return deferred.promise;
+};
+
+/**
+ * Returns a promise for the given value (or promised value), some
+ * milliseconds after it resolved. Passes rejections immediately.
+ * @param {Any*} promise
+ * @param {Number} milliseconds
+ * @returns a promise for the resolution of the given promise after milliseconds
+ * time has elapsed since the resolution of the given promise.
+ * If the given promise rejects, that is passed immediately.
+ */
+Q.delay = function (object, timeout) {
+    if (timeout === void 0) {
+        timeout = object;
+        object = void 0;
+    }
+    return Q(object).delay(timeout);
+};
+
+Promise.prototype.delay = function (timeout) {
+    return this.then(function (value) {
+        var deferred = defer();
+        setTimeout(function () {
+            deferred.resolve(value);
+        }, timeout);
+        return deferred.promise;
+    });
+};
+
+/**
+ * Passes a continuation to a Node function, which is called with the given
+ * arguments provided as an array, and returns a promise.
+ *
+ *      Q.nfapply(FS.readFile, [__filename])
+ *      .then(function (content) {
+ *      })
+ *
+ */
+Q.nfapply = function (callback, args) {
+    return Q(callback).nfapply(args);
+};
+
+Promise.prototype.nfapply = function (args) {
+    var deferred = defer();
+    var nodeArgs = array_slice(args);
+    nodeArgs.push(deferred.makeNodeResolver());
+    this.fapply(nodeArgs).fail(deferred.reject);
+    return deferred.promise;
+};
+
+/**
+ * Passes a continuation to a Node function, which is called with the given
+ * arguments provided individually, and returns a promise.
+ * @example
+ * Q.nfcall(FS.readFile, __filename)
+ * .then(function (content) {
+ * })
+ *
+ */
+Q.nfcall = function (callback /*...args*/) {
+    var args = array_slice(arguments, 1);
+    return Q(callback).nfapply(args);
+};
+
+Promise.prototype.nfcall = function (/*...args*/) {
+    var nodeArgs = array_slice(arguments);
+    var deferred = defer();
+    nodeArgs.push(deferred.makeNodeResolver());
+    this.fapply(nodeArgs).fail(deferred.reject);
+    return deferred.promise;
+};
+
+/**
+ * Wraps a NodeJS continuation passing function and returns an equivalent
+ * version that returns a promise.
+ * @example
+ * Q.nfbind(FS.readFile, __filename)("utf-8")
+ * .then(console.log)
+ * .done()
+ */
+Q.nfbind =
+Q.denodeify = function (callback /*...args*/) {
+    if (callback === undefined) {
+        throw new Error("Q can't wrap an undefined function");
+    }
+    var baseArgs = array_slice(arguments, 1);
+    return function () {
+        var nodeArgs = baseArgs.concat(array_slice(arguments));
+        var deferred = defer();
+        nodeArgs.push(deferred.makeNodeResolver());
+        Q(callback).fapply(nodeArgs).fail(deferred.reject);
+        return deferred.promise;
+    };
+};
+
+Promise.prototype.nfbind =
+Promise.prototype.denodeify = function (/*...args*/) {
+    var args = array_slice(arguments);
+    args.unshift(this);
+    return Q.denodeify.apply(void 0, args);
+};
+
+Q.nbind = function (callback, thisp /*...args*/) {
+    var baseArgs = array_slice(arguments, 2);
+    return function () {
+        var nodeArgs = baseArgs.concat(array_slice(arguments));
+        var deferred = defer();
+        nodeArgs.push(deferred.makeNodeResolver());
+        function bound() {
+            return callback.apply(thisp, arguments);
+        }
+        Q(bound).fapply(nodeArgs).fail(deferred.reject);
+        return deferred.promise;
+    };
+};
+
+Promise.prototype.nbind = function (/*thisp, ...args*/) {
+    var args = array_slice(arguments, 0);
+    args.unshift(this);
+    return Q.nbind.apply(void 0, args);
+};
+
+/**
+ * Calls a method of a Node-style object that accepts a Node-style
+ * callback with a given array of arguments, plus a provided callback.
+ * @param object an object that has the named method
+ * @param {String} name name of the method of object
+ * @param {Array} args arguments to pass to the method; the callback
+ * will be provided by Q and appended to these arguments.
+ * @returns a promise for the value or error
+ */
+Q.nmapply = // XXX As proposed by "Redsandro"
+Q.npost = function (object, name, args) {
+    return Q(object).npost(name, args);
+};
+
+Promise.prototype.nmapply = // XXX As proposed by "Redsandro"
+Promise.prototype.npost = function (name, args) {
+    var nodeArgs = array_slice(args || []);
+    var deferred = defer();
+    nodeArgs.push(deferred.makeNodeResolver());
+    this.dispatch("post", [name, nodeArgs]).fail(deferred.reject);
+    return deferred.promise;
+};
+
+/**
+ * Calls a method of a Node-style object that accepts a Node-style
+ * callback, forwarding the given variadic arguments, plus a provided
+ * callback argument.
+ * @param object an object that has the named method
+ * @param {String} name name of the method of object
+ * @param ...args arguments to pass to the method; the callback will
+ * be provided by Q and appended to these arguments.
+ * @returns a promise for the value or error
+ */
+Q.nsend = // XXX Based on Mark Miller's proposed "send"
+Q.nmcall = // XXX Based on "Redsandro's" proposal
+Q.ninvoke = function (object, name /*...args*/) {
+    var nodeArgs = array_slice(arguments, 2);
+    var deferred = defer();
+    nodeArgs.push(deferred.makeNodeResolver());
+    Q(object).dispatch("post", [name, nodeArgs]).fail(deferred.reject);
+    return deferred.promise;
+};
+
+Promise.prototype.nsend = // XXX Based on Mark Miller's proposed "send"
+Promise.prototype.nmcall = // XXX Based on "Redsandro's" proposal
+Promise.prototype.ninvoke = function (name /*...args*/) {
+    var nodeArgs = array_slice(arguments, 1);
+    var deferred = defer();
+    nodeArgs.push(deferred.makeNodeResolver());
+    this.dispatch("post", [name, nodeArgs]).fail(deferred.reject);
+    return deferred.promise;
+};
+
+/**
+ * If a function would like to support both Node continuation-passing-style and
+ * promise-returning-style, it can end its internal promise chain with
+ * `nodeify(nodeback)`, forwarding the optional nodeback argument.  If the user
+ * elects to use a nodeback, the result will be sent there.  If they do not
+ * pass a nodeback, they will receive the result promise.
+ * @param object a result (or a promise for a result)
+ * @param {Function} nodeback a Node.js-style callback
+ * @returns either the promise or nothing
+ */
+Q.nodeify = nodeify;
+function nodeify(object, nodeback) {
+    return Q(object).nodeify(nodeback);
+}
+
+Promise.prototype.nodeify = function (nodeback) {
+    if (nodeback) {
+        this.then(function (value) {
+            Q.nextTick(function () {
+                nodeback(null, value);
+            });
+        }, function (error) {
+            Q.nextTick(function () {
+                nodeback(error);
+            });
+        });
+    } else {
+        return this;
+    }
+};
+
+Q.noConflict = function() {
+    throw new Error("Q.noConflict only works when Q is used as a global");
+};
+
+// All code before this point will be filtered from stack traces.
+var qEndingLine = captureLine();
+
+return Q;
+
+});
+
 
 /***/ }),
 
@@ -404,7 +5006,1331 @@ eval("// vim:ts=4:sts=4:sw=4:\n/*!\n *\n * Copyright 2009-2017 Kris Kowal under 
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-eval("exports = module.exports = SemVer;\n\n// The debug function is excluded entirely from the minified version.\n/* nomin */ var debug;\n/* nomin */ if (typeof process === 'object' &&\n    /* nomin */ process.env &&\n    /* nomin */ process.env.NODE_DEBUG &&\n    /* nomin */ /\\bsemver\\b/i.test(process.env.NODE_DEBUG))\n  /* nomin */ debug = function() {\n    /* nomin */ var args = Array.prototype.slice.call(arguments, 0);\n    /* nomin */ args.unshift('SEMVER');\n    /* nomin */ console.log.apply(console, args);\n    /* nomin */ };\n/* nomin */ else\n  /* nomin */ debug = function() {};\n\n// Note: this is the semver.org version of the spec that it implements\n// Not necessarily the package version of this code.\nexports.SEMVER_SPEC_VERSION = '2.0.0';\n\nvar MAX_LENGTH = 256;\nvar MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 9007199254740991;\n\n// Max safe segment length for coercion.\nvar MAX_SAFE_COMPONENT_LENGTH = 16;\n\n// The actual regexps go on exports.re\nvar re = exports.re = [];\nvar src = exports.src = [];\nvar R = 0;\n\n// The following Regular Expressions can be used for tokenizing,\n// validating, and parsing SemVer version strings.\n\n// ## Numeric Identifier\n// A single `0`, or a non-zero digit followed by zero or more digits.\n\nvar NUMERICIDENTIFIER = R++;\nsrc[NUMERICIDENTIFIER] = '0|[1-9]\\\\d*';\nvar NUMERICIDENTIFIERLOOSE = R++;\nsrc[NUMERICIDENTIFIERLOOSE] = '[0-9]+';\n\n\n// ## Non-numeric Identifier\n// Zero or more digits, followed by a letter or hyphen, and then zero or\n// more letters, digits, or hyphens.\n\nvar NONNUMERICIDENTIFIER = R++;\nsrc[NONNUMERICIDENTIFIER] = '\\\\d*[a-zA-Z-][a-zA-Z0-9-]*';\n\n\n// ## Main Version\n// Three dot-separated numeric identifiers.\n\nvar MAINVERSION = R++;\nsrc[MAINVERSION] = '(' + src[NUMERICIDENTIFIER] + ')\\\\.' +\n                   '(' + src[NUMERICIDENTIFIER] + ')\\\\.' +\n                   '(' + src[NUMERICIDENTIFIER] + ')';\n\nvar MAINVERSIONLOOSE = R++;\nsrc[MAINVERSIONLOOSE] = '(' + src[NUMERICIDENTIFIERLOOSE] + ')\\\\.' +\n                        '(' + src[NUMERICIDENTIFIERLOOSE] + ')\\\\.' +\n                        '(' + src[NUMERICIDENTIFIERLOOSE] + ')';\n\n// ## Pre-release Version Identifier\n// A numeric identifier, or a non-numeric identifier.\n\nvar PRERELEASEIDENTIFIER = R++;\nsrc[PRERELEASEIDENTIFIER] = '(?:' + src[NUMERICIDENTIFIER] +\n                            '|' + src[NONNUMERICIDENTIFIER] + ')';\n\nvar PRERELEASEIDENTIFIERLOOSE = R++;\nsrc[PRERELEASEIDENTIFIERLOOSE] = '(?:' + src[NUMERICIDENTIFIERLOOSE] +\n                                 '|' + src[NONNUMERICIDENTIFIER] + ')';\n\n\n// ## Pre-release Version\n// Hyphen, followed by one or more dot-separated pre-release version\n// identifiers.\n\nvar PRERELEASE = R++;\nsrc[PRERELEASE] = '(?:-(' + src[PRERELEASEIDENTIFIER] +\n                  '(?:\\\\.' + src[PRERELEASEIDENTIFIER] + ')*))';\n\nvar PRERELEASELOOSE = R++;\nsrc[PRERELEASELOOSE] = '(?:-?(' + src[PRERELEASEIDENTIFIERLOOSE] +\n                       '(?:\\\\.' + src[PRERELEASEIDENTIFIERLOOSE] + ')*))';\n\n// ## Build Metadata Identifier\n// Any combination of digits, letters, or hyphens.\n\nvar BUILDIDENTIFIER = R++;\nsrc[BUILDIDENTIFIER] = '[0-9A-Za-z-]+';\n\n// ## Build Metadata\n// Plus sign, followed by one or more period-separated build metadata\n// identifiers.\n\nvar BUILD = R++;\nsrc[BUILD] = '(?:\\\\+(' + src[BUILDIDENTIFIER] +\n             '(?:\\\\.' + src[BUILDIDENTIFIER] + ')*))';\n\n\n// ## Full Version String\n// A main version, followed optionally by a pre-release version and\n// build metadata.\n\n// Note that the only major, minor, patch, and pre-release sections of\n// the version string are capturing groups.  The build metadata is not a\n// capturing group, because it should not ever be used in version\n// comparison.\n\nvar FULL = R++;\nvar FULLPLAIN = 'v?' + src[MAINVERSION] +\n                src[PRERELEASE] + '?' +\n                src[BUILD] + '?';\n\nsrc[FULL] = '^' + FULLPLAIN + '$';\n\n// like full, but allows v1.2.3 and =1.2.3, which people do sometimes.\n// also, 1.0.0alpha1 (prerelease without the hyphen) which is pretty\n// common in the npm registry.\nvar LOOSEPLAIN = '[v=\\\\s]*' + src[MAINVERSIONLOOSE] +\n                 src[PRERELEASELOOSE] + '?' +\n                 src[BUILD] + '?';\n\nvar LOOSE = R++;\nsrc[LOOSE] = '^' + LOOSEPLAIN + '$';\n\nvar GTLT = R++;\nsrc[GTLT] = '((?:<|>)?=?)';\n\n// Something like \"2.*\" or \"1.2.x\".\n// Note that \"x.x\" is a valid xRange identifer, meaning \"any version\"\n// Only the first item is strictly required.\nvar XRANGEIDENTIFIERLOOSE = R++;\nsrc[XRANGEIDENTIFIERLOOSE] = src[NUMERICIDENTIFIERLOOSE] + '|x|X|\\\\*';\nvar XRANGEIDENTIFIER = R++;\nsrc[XRANGEIDENTIFIER] = src[NUMERICIDENTIFIER] + '|x|X|\\\\*';\n\nvar XRANGEPLAIN = R++;\nsrc[XRANGEPLAIN] = '[v=\\\\s]*(' + src[XRANGEIDENTIFIER] + ')' +\n                   '(?:\\\\.(' + src[XRANGEIDENTIFIER] + ')' +\n                   '(?:\\\\.(' + src[XRANGEIDENTIFIER] + ')' +\n                   '(?:' + src[PRERELEASE] + ')?' +\n                   src[BUILD] + '?' +\n                   ')?)?';\n\nvar XRANGEPLAINLOOSE = R++;\nsrc[XRANGEPLAINLOOSE] = '[v=\\\\s]*(' + src[XRANGEIDENTIFIERLOOSE] + ')' +\n                        '(?:\\\\.(' + src[XRANGEIDENTIFIERLOOSE] + ')' +\n                        '(?:\\\\.(' + src[XRANGEIDENTIFIERLOOSE] + ')' +\n                        '(?:' + src[PRERELEASELOOSE] + ')?' +\n                        src[BUILD] + '?' +\n                        ')?)?';\n\nvar XRANGE = R++;\nsrc[XRANGE] = '^' + src[GTLT] + '\\\\s*' + src[XRANGEPLAIN] + '$';\nvar XRANGELOOSE = R++;\nsrc[XRANGELOOSE] = '^' + src[GTLT] + '\\\\s*' + src[XRANGEPLAINLOOSE] + '$';\n\n// Coercion.\n// Extract anything that could conceivably be a part of a valid semver\nvar COERCE = R++;\nsrc[COERCE] = '(?:^|[^\\\\d])' +\n              '(\\\\d{1,' + MAX_SAFE_COMPONENT_LENGTH + '})' +\n              '(?:\\\\.(\\\\d{1,' + MAX_SAFE_COMPONENT_LENGTH + '}))?' +\n              '(?:\\\\.(\\\\d{1,' + MAX_SAFE_COMPONENT_LENGTH + '}))?' +\n              '(?:$|[^\\\\d])';\n\n// Tilde ranges.\n// Meaning is \"reasonably at or greater than\"\nvar LONETILDE = R++;\nsrc[LONETILDE] = '(?:~>?)';\n\nvar TILDETRIM = R++;\nsrc[TILDETRIM] = '(\\\\s*)' + src[LONETILDE] + '\\\\s+';\nre[TILDETRIM] = new RegExp(src[TILDETRIM], 'g');\nvar tildeTrimReplace = '$1~';\n\nvar TILDE = R++;\nsrc[TILDE] = '^' + src[LONETILDE] + src[XRANGEPLAIN] + '$';\nvar TILDELOOSE = R++;\nsrc[TILDELOOSE] = '^' + src[LONETILDE] + src[XRANGEPLAINLOOSE] + '$';\n\n// Caret ranges.\n// Meaning is \"at least and backwards compatible with\"\nvar LONECARET = R++;\nsrc[LONECARET] = '(?:\\\\^)';\n\nvar CARETTRIM = R++;\nsrc[CARETTRIM] = '(\\\\s*)' + src[LONECARET] + '\\\\s+';\nre[CARETTRIM] = new RegExp(src[CARETTRIM], 'g');\nvar caretTrimReplace = '$1^';\n\nvar CARET = R++;\nsrc[CARET] = '^' + src[LONECARET] + src[XRANGEPLAIN] + '$';\nvar CARETLOOSE = R++;\nsrc[CARETLOOSE] = '^' + src[LONECARET] + src[XRANGEPLAINLOOSE] + '$';\n\n// A simple gt/lt/eq thing, or just \"\" to indicate \"any version\"\nvar COMPARATORLOOSE = R++;\nsrc[COMPARATORLOOSE] = '^' + src[GTLT] + '\\\\s*(' + LOOSEPLAIN + ')$|^$';\nvar COMPARATOR = R++;\nsrc[COMPARATOR] = '^' + src[GTLT] + '\\\\s*(' + FULLPLAIN + ')$|^$';\n\n\n// An expression to strip any whitespace between the gtlt and the thing\n// it modifies, so that `> 1.2.3` ==> `>1.2.3`\nvar COMPARATORTRIM = R++;\nsrc[COMPARATORTRIM] = '(\\\\s*)' + src[GTLT] +\n                      '\\\\s*(' + LOOSEPLAIN + '|' + src[XRANGEPLAIN] + ')';\n\n// this one has to use the /g flag\nre[COMPARATORTRIM] = new RegExp(src[COMPARATORTRIM], 'g');\nvar comparatorTrimReplace = '$1$2$3';\n\n\n// Something like `1.2.3 - 1.2.4`\n// Note that these all use the loose form, because they'll be\n// checked against either the strict or loose comparator form\n// later.\nvar HYPHENRANGE = R++;\nsrc[HYPHENRANGE] = '^\\\\s*(' + src[XRANGEPLAIN] + ')' +\n                   '\\\\s+-\\\\s+' +\n                   '(' + src[XRANGEPLAIN] + ')' +\n                   '\\\\s*$';\n\nvar HYPHENRANGELOOSE = R++;\nsrc[HYPHENRANGELOOSE] = '^\\\\s*(' + src[XRANGEPLAINLOOSE] + ')' +\n                        '\\\\s+-\\\\s+' +\n                        '(' + src[XRANGEPLAINLOOSE] + ')' +\n                        '\\\\s*$';\n\n// Star ranges basically just allow anything at all.\nvar STAR = R++;\nsrc[STAR] = '(<|>)?=?\\\\s*\\\\*';\n\n// Compile to actual regexp objects.\n// All are flag-free, unless they were created above with a flag.\nfor (var i = 0; i < R; i++) {\n  debug(i, src[i]);\n  if (!re[i])\n    re[i] = new RegExp(src[i]);\n}\n\nexports.parse = parse;\nfunction parse(version, loose) {\n  if (version instanceof SemVer)\n    return version;\n\n  if (typeof version !== 'string')\n    return null;\n\n  if (version.length > MAX_LENGTH)\n    return null;\n\n  var r = loose ? re[LOOSE] : re[FULL];\n  if (!r.test(version))\n    return null;\n\n  try {\n    return new SemVer(version, loose);\n  } catch (er) {\n    return null;\n  }\n}\n\nexports.valid = valid;\nfunction valid(version, loose) {\n  var v = parse(version, loose);\n  return v ? v.version : null;\n}\n\n\nexports.clean = clean;\nfunction clean(version, loose) {\n  var s = parse(version.trim().replace(/^[=v]+/, ''), loose);\n  return s ? s.version : null;\n}\n\nexports.SemVer = SemVer;\n\nfunction SemVer(version, loose) {\n  if (version instanceof SemVer) {\n    if (version.loose === loose)\n      return version;\n    else\n      version = version.version;\n  } else if (typeof version !== 'string') {\n    throw new TypeError('Invalid Version: ' + version);\n  }\n\n  if (version.length > MAX_LENGTH)\n    throw new TypeError('version is longer than ' + MAX_LENGTH + ' characters')\n\n  if (!(this instanceof SemVer))\n    return new SemVer(version, loose);\n\n  debug('SemVer', version, loose);\n  this.loose = loose;\n  var m = version.trim().match(loose ? re[LOOSE] : re[FULL]);\n\n  if (!m)\n    throw new TypeError('Invalid Version: ' + version);\n\n  this.raw = version;\n\n  // these are actually numbers\n  this.major = +m[1];\n  this.minor = +m[2];\n  this.patch = +m[3];\n\n  if (this.major > MAX_SAFE_INTEGER || this.major < 0)\n    throw new TypeError('Invalid major version')\n\n  if (this.minor > MAX_SAFE_INTEGER || this.minor < 0)\n    throw new TypeError('Invalid minor version')\n\n  if (this.patch > MAX_SAFE_INTEGER || this.patch < 0)\n    throw new TypeError('Invalid patch version')\n\n  // numberify any prerelease numeric ids\n  if (!m[4])\n    this.prerelease = [];\n  else\n    this.prerelease = m[4].split('.').map(function(id) {\n      if (/^[0-9]+$/.test(id)) {\n        var num = +id;\n        if (num >= 0 && num < MAX_SAFE_INTEGER)\n          return num;\n      }\n      return id;\n    });\n\n  this.build = m[5] ? m[5].split('.') : [];\n  this.format();\n}\n\nSemVer.prototype.format = function() {\n  this.version = this.major + '.' + this.minor + '.' + this.patch;\n  if (this.prerelease.length)\n    this.version += '-' + this.prerelease.join('.');\n  return this.version;\n};\n\nSemVer.prototype.toString = function() {\n  return this.version;\n};\n\nSemVer.prototype.compare = function(other) {\n  debug('SemVer.compare', this.version, this.loose, other);\n  if (!(other instanceof SemVer))\n    other = new SemVer(other, this.loose);\n\n  return this.compareMain(other) || this.comparePre(other);\n};\n\nSemVer.prototype.compareMain = function(other) {\n  if (!(other instanceof SemVer))\n    other = new SemVer(other, this.loose);\n\n  return compareIdentifiers(this.major, other.major) ||\n         compareIdentifiers(this.minor, other.minor) ||\n         compareIdentifiers(this.patch, other.patch);\n};\n\nSemVer.prototype.comparePre = function(other) {\n  if (!(other instanceof SemVer))\n    other = new SemVer(other, this.loose);\n\n  // NOT having a prerelease is > having one\n  if (this.prerelease.length && !other.prerelease.length)\n    return -1;\n  else if (!this.prerelease.length && other.prerelease.length)\n    return 1;\n  else if (!this.prerelease.length && !other.prerelease.length)\n    return 0;\n\n  var i = 0;\n  do {\n    var a = this.prerelease[i];\n    var b = other.prerelease[i];\n    debug('prerelease compare', i, a, b);\n    if (a === undefined && b === undefined)\n      return 0;\n    else if (b === undefined)\n      return 1;\n    else if (a === undefined)\n      return -1;\n    else if (a === b)\n      continue;\n    else\n      return compareIdentifiers(a, b);\n  } while (++i);\n};\n\n// preminor will bump the version up to the next minor release, and immediately\n// down to pre-release. premajor and prepatch work the same way.\nSemVer.prototype.inc = function(release, identifier) {\n  switch (release) {\n    case 'premajor':\n      this.prerelease.length = 0;\n      this.patch = 0;\n      this.minor = 0;\n      this.major++;\n      this.inc('pre', identifier);\n      break;\n    case 'preminor':\n      this.prerelease.length = 0;\n      this.patch = 0;\n      this.minor++;\n      this.inc('pre', identifier);\n      break;\n    case 'prepatch':\n      // If this is already a prerelease, it will bump to the next version\n      // drop any prereleases that might already exist, since they are not\n      // relevant at this point.\n      this.prerelease.length = 0;\n      this.inc('patch', identifier);\n      this.inc('pre', identifier);\n      break;\n    // If the input is a non-prerelease version, this acts the same as\n    // prepatch.\n    case 'prerelease':\n      if (this.prerelease.length === 0)\n        this.inc('patch', identifier);\n      this.inc('pre', identifier);\n      break;\n\n    case 'major':\n      // If this is a pre-major version, bump up to the same major version.\n      // Otherwise increment major.\n      // 1.0.0-5 bumps to 1.0.0\n      // 1.1.0 bumps to 2.0.0\n      if (this.minor !== 0 || this.patch !== 0 || this.prerelease.length === 0)\n        this.major++;\n      this.minor = 0;\n      this.patch = 0;\n      this.prerelease = [];\n      break;\n    case 'minor':\n      // If this is a pre-minor version, bump up to the same minor version.\n      // Otherwise increment minor.\n      // 1.2.0-5 bumps to 1.2.0\n      // 1.2.1 bumps to 1.3.0\n      if (this.patch !== 0 || this.prerelease.length === 0)\n        this.minor++;\n      this.patch = 0;\n      this.prerelease = [];\n      break;\n    case 'patch':\n      // If this is not a pre-release version, it will increment the patch.\n      // If it is a pre-release it will bump up to the same patch version.\n      // 1.2.0-5 patches to 1.2.0\n      // 1.2.0 patches to 1.2.1\n      if (this.prerelease.length === 0)\n        this.patch++;\n      this.prerelease = [];\n      break;\n    // This probably shouldn't be used publicly.\n    // 1.0.0 \"pre\" would become 1.0.0-0 which is the wrong direction.\n    case 'pre':\n      if (this.prerelease.length === 0)\n        this.prerelease = [0];\n      else {\n        var i = this.prerelease.length;\n        while (--i >= 0) {\n          if (typeof this.prerelease[i] === 'number') {\n            this.prerelease[i]++;\n            i = -2;\n          }\n        }\n        if (i === -1) // didn't increment anything\n          this.prerelease.push(0);\n      }\n      if (identifier) {\n        // 1.2.0-beta.1 bumps to 1.2.0-beta.2,\n        // 1.2.0-beta.fooblz or 1.2.0-beta bumps to 1.2.0-beta.0\n        if (this.prerelease[0] === identifier) {\n          if (isNaN(this.prerelease[1]))\n            this.prerelease = [identifier, 0];\n        } else\n          this.prerelease = [identifier, 0];\n      }\n      break;\n\n    default:\n      throw new Error('invalid increment argument: ' + release);\n  }\n  this.format();\n  this.raw = this.version;\n  return this;\n};\n\nexports.inc = inc;\nfunction inc(version, release, loose, identifier) {\n  if (typeof(loose) === 'string') {\n    identifier = loose;\n    loose = undefined;\n  }\n\n  try {\n    return new SemVer(version, loose).inc(release, identifier).version;\n  } catch (er) {\n    return null;\n  }\n}\n\nexports.diff = diff;\nfunction diff(version1, version2) {\n  if (eq(version1, version2)) {\n    return null;\n  } else {\n    var v1 = parse(version1);\n    var v2 = parse(version2);\n    if (v1.prerelease.length || v2.prerelease.length) {\n      for (var key in v1) {\n        if (key === 'major' || key === 'minor' || key === 'patch') {\n          if (v1[key] !== v2[key]) {\n            return 'pre'+key;\n          }\n        }\n      }\n      return 'prerelease';\n    }\n    for (var key in v1) {\n      if (key === 'major' || key === 'minor' || key === 'patch') {\n        if (v1[key] !== v2[key]) {\n          return key;\n        }\n      }\n    }\n  }\n}\n\nexports.compareIdentifiers = compareIdentifiers;\n\nvar numeric = /^[0-9]+$/;\nfunction compareIdentifiers(a, b) {\n  var anum = numeric.test(a);\n  var bnum = numeric.test(b);\n\n  if (anum && bnum) {\n    a = +a;\n    b = +b;\n  }\n\n  return (anum && !bnum) ? -1 :\n         (bnum && !anum) ? 1 :\n         a < b ? -1 :\n         a > b ? 1 :\n         0;\n}\n\nexports.rcompareIdentifiers = rcompareIdentifiers;\nfunction rcompareIdentifiers(a, b) {\n  return compareIdentifiers(b, a);\n}\n\nexports.major = major;\nfunction major(a, loose) {\n  return new SemVer(a, loose).major;\n}\n\nexports.minor = minor;\nfunction minor(a, loose) {\n  return new SemVer(a, loose).minor;\n}\n\nexports.patch = patch;\nfunction patch(a, loose) {\n  return new SemVer(a, loose).patch;\n}\n\nexports.compare = compare;\nfunction compare(a, b, loose) {\n  return new SemVer(a, loose).compare(new SemVer(b, loose));\n}\n\nexports.compareLoose = compareLoose;\nfunction compareLoose(a, b) {\n  return compare(a, b, true);\n}\n\nexports.rcompare = rcompare;\nfunction rcompare(a, b, loose) {\n  return compare(b, a, loose);\n}\n\nexports.sort = sort;\nfunction sort(list, loose) {\n  return list.sort(function(a, b) {\n    return exports.compare(a, b, loose);\n  });\n}\n\nexports.rsort = rsort;\nfunction rsort(list, loose) {\n  return list.sort(function(a, b) {\n    return exports.rcompare(a, b, loose);\n  });\n}\n\nexports.gt = gt;\nfunction gt(a, b, loose) {\n  return compare(a, b, loose) > 0;\n}\n\nexports.lt = lt;\nfunction lt(a, b, loose) {\n  return compare(a, b, loose) < 0;\n}\n\nexports.eq = eq;\nfunction eq(a, b, loose) {\n  return compare(a, b, loose) === 0;\n}\n\nexports.neq = neq;\nfunction neq(a, b, loose) {\n  return compare(a, b, loose) !== 0;\n}\n\nexports.gte = gte;\nfunction gte(a, b, loose) {\n  return compare(a, b, loose) >= 0;\n}\n\nexports.lte = lte;\nfunction lte(a, b, loose) {\n  return compare(a, b, loose) <= 0;\n}\n\nexports.cmp = cmp;\nfunction cmp(a, op, b, loose) {\n  var ret;\n  switch (op) {\n    case '===':\n      if (typeof a === 'object') a = a.version;\n      if (typeof b === 'object') b = b.version;\n      ret = a === b;\n      break;\n    case '!==':\n      if (typeof a === 'object') a = a.version;\n      if (typeof b === 'object') b = b.version;\n      ret = a !== b;\n      break;\n    case '': case '=': case '==': ret = eq(a, b, loose); break;\n    case '!=': ret = neq(a, b, loose); break;\n    case '>': ret = gt(a, b, loose); break;\n    case '>=': ret = gte(a, b, loose); break;\n    case '<': ret = lt(a, b, loose); break;\n    case '<=': ret = lte(a, b, loose); break;\n    default: throw new TypeError('Invalid operator: ' + op);\n  }\n  return ret;\n}\n\nexports.Comparator = Comparator;\nfunction Comparator(comp, loose) {\n  if (comp instanceof Comparator) {\n    if (comp.loose === loose)\n      return comp;\n    else\n      comp = comp.value;\n  }\n\n  if (!(this instanceof Comparator))\n    return new Comparator(comp, loose);\n\n  debug('comparator', comp, loose);\n  this.loose = loose;\n  this.parse(comp);\n\n  if (this.semver === ANY)\n    this.value = '';\n  else\n    this.value = this.operator + this.semver.version;\n\n  debug('comp', this);\n}\n\nvar ANY = {};\nComparator.prototype.parse = function(comp) {\n  var r = this.loose ? re[COMPARATORLOOSE] : re[COMPARATOR];\n  var m = comp.match(r);\n\n  if (!m)\n    throw new TypeError('Invalid comparator: ' + comp);\n\n  this.operator = m[1];\n  if (this.operator === '=')\n    this.operator = '';\n\n  // if it literally is just '>' or '' then allow anything.\n  if (!m[2])\n    this.semver = ANY;\n  else\n    this.semver = new SemVer(m[2], this.loose);\n};\n\nComparator.prototype.toString = function() {\n  return this.value;\n};\n\nComparator.prototype.test = function(version) {\n  debug('Comparator.test', version, this.loose);\n\n  if (this.semver === ANY)\n    return true;\n\n  if (typeof version === 'string')\n    version = new SemVer(version, this.loose);\n\n  return cmp(version, this.operator, this.semver, this.loose);\n};\n\nComparator.prototype.intersects = function(comp, loose) {\n  if (!(comp instanceof Comparator)) {\n    throw new TypeError('a Comparator is required');\n  }\n\n  var rangeTmp;\n\n  if (this.operator === '') {\n    rangeTmp = new Range(comp.value, loose);\n    return satisfies(this.value, rangeTmp, loose);\n  } else if (comp.operator === '') {\n    rangeTmp = new Range(this.value, loose);\n    return satisfies(comp.semver, rangeTmp, loose);\n  }\n\n  var sameDirectionIncreasing =\n    (this.operator === '>=' || this.operator === '>') &&\n    (comp.operator === '>=' || comp.operator === '>');\n  var sameDirectionDecreasing =\n    (this.operator === '<=' || this.operator === '<') &&\n    (comp.operator === '<=' || comp.operator === '<');\n  var sameSemVer = this.semver.version === comp.semver.version;\n  var differentDirectionsInclusive =\n    (this.operator === '>=' || this.operator === '<=') &&\n    (comp.operator === '>=' || comp.operator === '<=');\n  var oppositeDirectionsLessThan =\n    cmp(this.semver, '<', comp.semver, loose) &&\n    ((this.operator === '>=' || this.operator === '>') &&\n    (comp.operator === '<=' || comp.operator === '<'));\n  var oppositeDirectionsGreaterThan =\n    cmp(this.semver, '>', comp.semver, loose) &&\n    ((this.operator === '<=' || this.operator === '<') &&\n    (comp.operator === '>=' || comp.operator === '>'));\n\n  return sameDirectionIncreasing || sameDirectionDecreasing ||\n    (sameSemVer && differentDirectionsInclusive) ||\n    oppositeDirectionsLessThan || oppositeDirectionsGreaterThan;\n};\n\n\nexports.Range = Range;\nfunction Range(range, loose) {\n  if (range instanceof Range) {\n    if (range.loose === loose) {\n      return range;\n    } else {\n      return new Range(range.raw, loose);\n    }\n  }\n\n  if (range instanceof Comparator) {\n    return new Range(range.value, loose);\n  }\n\n  if (!(this instanceof Range))\n    return new Range(range, loose);\n\n  this.loose = loose;\n\n  // First, split based on boolean or ||\n  this.raw = range;\n  this.set = range.split(/\\s*\\|\\|\\s*/).map(function(range) {\n    return this.parseRange(range.trim());\n  }, this).filter(function(c) {\n    // throw out any that are not relevant for whatever reason\n    return c.length;\n  });\n\n  if (!this.set.length) {\n    throw new TypeError('Invalid SemVer Range: ' + range);\n  }\n\n  this.format();\n}\n\nRange.prototype.format = function() {\n  this.range = this.set.map(function(comps) {\n    return comps.join(' ').trim();\n  }).join('||').trim();\n  return this.range;\n};\n\nRange.prototype.toString = function() {\n  return this.range;\n};\n\nRange.prototype.parseRange = function(range) {\n  var loose = this.loose;\n  range = range.trim();\n  debug('range', range, loose);\n  // `1.2.3 - 1.2.4` => `>=1.2.3 <=1.2.4`\n  var hr = loose ? re[HYPHENRANGELOOSE] : re[HYPHENRANGE];\n  range = range.replace(hr, hyphenReplace);\n  debug('hyphen replace', range);\n  // `> 1.2.3 < 1.2.5` => `>1.2.3 <1.2.5`\n  range = range.replace(re[COMPARATORTRIM], comparatorTrimReplace);\n  debug('comparator trim', range, re[COMPARATORTRIM]);\n\n  // `~ 1.2.3` => `~1.2.3`\n  range = range.replace(re[TILDETRIM], tildeTrimReplace);\n\n  // `^ 1.2.3` => `^1.2.3`\n  range = range.replace(re[CARETTRIM], caretTrimReplace);\n\n  // normalize spaces\n  range = range.split(/\\s+/).join(' ');\n\n  // At this point, the range is completely trimmed and\n  // ready to be split into comparators.\n\n  var compRe = loose ? re[COMPARATORLOOSE] : re[COMPARATOR];\n  var set = range.split(' ').map(function(comp) {\n    return parseComparator(comp, loose);\n  }).join(' ').split(/\\s+/);\n  if (this.loose) {\n    // in loose mode, throw out any that are not valid comparators\n    set = set.filter(function(comp) {\n      return !!comp.match(compRe);\n    });\n  }\n  set = set.map(function(comp) {\n    return new Comparator(comp, loose);\n  });\n\n  return set;\n};\n\nRange.prototype.intersects = function(range, loose) {\n  if (!(range instanceof Range)) {\n    throw new TypeError('a Range is required');\n  }\n\n  return this.set.some(function(thisComparators) {\n    return thisComparators.every(function(thisComparator) {\n      return range.set.some(function(rangeComparators) {\n        return rangeComparators.every(function(rangeComparator) {\n          return thisComparator.intersects(rangeComparator, loose);\n        });\n      });\n    });\n  });\n};\n\n// Mostly just for testing and legacy API reasons\nexports.toComparators = toComparators;\nfunction toComparators(range, loose) {\n  return new Range(range, loose).set.map(function(comp) {\n    return comp.map(function(c) {\n      return c.value;\n    }).join(' ').trim().split(' ');\n  });\n}\n\n// comprised of xranges, tildes, stars, and gtlt's at this point.\n// already replaced the hyphen ranges\n// turn into a set of JUST comparators.\nfunction parseComparator(comp, loose) {\n  debug('comp', comp);\n  comp = replaceCarets(comp, loose);\n  debug('caret', comp);\n  comp = replaceTildes(comp, loose);\n  debug('tildes', comp);\n  comp = replaceXRanges(comp, loose);\n  debug('xrange', comp);\n  comp = replaceStars(comp, loose);\n  debug('stars', comp);\n  return comp;\n}\n\nfunction isX(id) {\n  return !id || id.toLowerCase() === 'x' || id === '*';\n}\n\n// ~, ~> --> * (any, kinda silly)\n// ~2, ~2.x, ~2.x.x, ~>2, ~>2.x ~>2.x.x --> >=2.0.0 <3.0.0\n// ~2.0, ~2.0.x, ~>2.0, ~>2.0.x --> >=2.0.0 <2.1.0\n// ~1.2, ~1.2.x, ~>1.2, ~>1.2.x --> >=1.2.0 <1.3.0\n// ~1.2.3, ~>1.2.3 --> >=1.2.3 <1.3.0\n// ~1.2.0, ~>1.2.0 --> >=1.2.0 <1.3.0\nfunction replaceTildes(comp, loose) {\n  return comp.trim().split(/\\s+/).map(function(comp) {\n    return replaceTilde(comp, loose);\n  }).join(' ');\n}\n\nfunction replaceTilde(comp, loose) {\n  var r = loose ? re[TILDELOOSE] : re[TILDE];\n  return comp.replace(r, function(_, M, m, p, pr) {\n    debug('tilde', comp, _, M, m, p, pr);\n    var ret;\n\n    if (isX(M))\n      ret = '';\n    else if (isX(m))\n      ret = '>=' + M + '.0.0 <' + (+M + 1) + '.0.0';\n    else if (isX(p))\n      // ~1.2 == >=1.2.0 <1.3.0\n      ret = '>=' + M + '.' + m + '.0 <' + M + '.' + (+m + 1) + '.0';\n    else if (pr) {\n      debug('replaceTilde pr', pr);\n      if (pr.charAt(0) !== '-')\n        pr = '-' + pr;\n      ret = '>=' + M + '.' + m + '.' + p + pr +\n            ' <' + M + '.' + (+m + 1) + '.0';\n    } else\n      // ~1.2.3 == >=1.2.3 <1.3.0\n      ret = '>=' + M + '.' + m + '.' + p +\n            ' <' + M + '.' + (+m + 1) + '.0';\n\n    debug('tilde return', ret);\n    return ret;\n  });\n}\n\n// ^ --> * (any, kinda silly)\n// ^2, ^2.x, ^2.x.x --> >=2.0.0 <3.0.0\n// ^2.0, ^2.0.x --> >=2.0.0 <3.0.0\n// ^1.2, ^1.2.x --> >=1.2.0 <2.0.0\n// ^1.2.3 --> >=1.2.3 <2.0.0\n// ^1.2.0 --> >=1.2.0 <2.0.0\nfunction replaceCarets(comp, loose) {\n  return comp.trim().split(/\\s+/).map(function(comp) {\n    return replaceCaret(comp, loose);\n  }).join(' ');\n}\n\nfunction replaceCaret(comp, loose) {\n  debug('caret', comp, loose);\n  var r = loose ? re[CARETLOOSE] : re[CARET];\n  return comp.replace(r, function(_, M, m, p, pr) {\n    debug('caret', comp, _, M, m, p, pr);\n    var ret;\n\n    if (isX(M))\n      ret = '';\n    else if (isX(m))\n      ret = '>=' + M + '.0.0 <' + (+M + 1) + '.0.0';\n    else if (isX(p)) {\n      if (M === '0')\n        ret = '>=' + M + '.' + m + '.0 <' + M + '.' + (+m + 1) + '.0';\n      else\n        ret = '>=' + M + '.' + m + '.0 <' + (+M + 1) + '.0.0';\n    } else if (pr) {\n      debug('replaceCaret pr', pr);\n      if (pr.charAt(0) !== '-')\n        pr = '-' + pr;\n      if (M === '0') {\n        if (m === '0')\n          ret = '>=' + M + '.' + m + '.' + p + pr +\n                ' <' + M + '.' + m + '.' + (+p + 1);\n        else\n          ret = '>=' + M + '.' + m + '.' + p + pr +\n                ' <' + M + '.' + (+m + 1) + '.0';\n      } else\n        ret = '>=' + M + '.' + m + '.' + p + pr +\n              ' <' + (+M + 1) + '.0.0';\n    } else {\n      debug('no pr');\n      if (M === '0') {\n        if (m === '0')\n          ret = '>=' + M + '.' + m + '.' + p +\n                ' <' + M + '.' + m + '.' + (+p + 1);\n        else\n          ret = '>=' + M + '.' + m + '.' + p +\n                ' <' + M + '.' + (+m + 1) + '.0';\n      } else\n        ret = '>=' + M + '.' + m + '.' + p +\n              ' <' + (+M + 1) + '.0.0';\n    }\n\n    debug('caret return', ret);\n    return ret;\n  });\n}\n\nfunction replaceXRanges(comp, loose) {\n  debug('replaceXRanges', comp, loose);\n  return comp.split(/\\s+/).map(function(comp) {\n    return replaceXRange(comp, loose);\n  }).join(' ');\n}\n\nfunction replaceXRange(comp, loose) {\n  comp = comp.trim();\n  var r = loose ? re[XRANGELOOSE] : re[XRANGE];\n  return comp.replace(r, function(ret, gtlt, M, m, p, pr) {\n    debug('xRange', comp, ret, gtlt, M, m, p, pr);\n    var xM = isX(M);\n    var xm = xM || isX(m);\n    var xp = xm || isX(p);\n    var anyX = xp;\n\n    if (gtlt === '=' && anyX)\n      gtlt = '';\n\n    if (xM) {\n      if (gtlt === '>' || gtlt === '<') {\n        // nothing is allowed\n        ret = '<0.0.0';\n      } else {\n        // nothing is forbidden\n        ret = '*';\n      }\n    } else if (gtlt && anyX) {\n      // replace X with 0\n      if (xm)\n        m = 0;\n      if (xp)\n        p = 0;\n\n      if (gtlt === '>') {\n        // >1 => >=2.0.0\n        // >1.2 => >=1.3.0\n        // >1.2.3 => >= 1.2.4\n        gtlt = '>=';\n        if (xm) {\n          M = +M + 1;\n          m = 0;\n          p = 0;\n        } else if (xp) {\n          m = +m + 1;\n          p = 0;\n        }\n      } else if (gtlt === '<=') {\n        // <=0.7.x is actually <0.8.0, since any 0.7.x should\n        // pass.  Similarly, <=7.x is actually <8.0.0, etc.\n        gtlt = '<';\n        if (xm)\n          M = +M + 1;\n        else\n          m = +m + 1;\n      }\n\n      ret = gtlt + M + '.' + m + '.' + p;\n    } else if (xm) {\n      ret = '>=' + M + '.0.0 <' + (+M + 1) + '.0.0';\n    } else if (xp) {\n      ret = '>=' + M + '.' + m + '.0 <' + M + '.' + (+m + 1) + '.0';\n    }\n\n    debug('xRange return', ret);\n\n    return ret;\n  });\n}\n\n// Because * is AND-ed with everything else in the comparator,\n// and '' means \"any version\", just remove the *s entirely.\nfunction replaceStars(comp, loose) {\n  debug('replaceStars', comp, loose);\n  // Looseness is ignored here.  star is always as loose as it gets!\n  return comp.trim().replace(re[STAR], '');\n}\n\n// This function is passed to string.replace(re[HYPHENRANGE])\n// M, m, patch, prerelease, build\n// 1.2 - 3.4.5 => >=1.2.0 <=3.4.5\n// 1.2.3 - 3.4 => >=1.2.0 <3.5.0 Any 3.4.x will do\n// 1.2 - 3.4 => >=1.2.0 <3.5.0\nfunction hyphenReplace($0,\n                       from, fM, fm, fp, fpr, fb,\n                       to, tM, tm, tp, tpr, tb) {\n\n  if (isX(fM))\n    from = '';\n  else if (isX(fm))\n    from = '>=' + fM + '.0.0';\n  else if (isX(fp))\n    from = '>=' + fM + '.' + fm + '.0';\n  else\n    from = '>=' + from;\n\n  if (isX(tM))\n    to = '';\n  else if (isX(tm))\n    to = '<' + (+tM + 1) + '.0.0';\n  else if (isX(tp))\n    to = '<' + tM + '.' + (+tm + 1) + '.0';\n  else if (tpr)\n    to = '<=' + tM + '.' + tm + '.' + tp + '-' + tpr;\n  else\n    to = '<=' + to;\n\n  return (from + ' ' + to).trim();\n}\n\n\n// if ANY of the sets match ALL of its comparators, then pass\nRange.prototype.test = function(version) {\n  if (!version)\n    return false;\n\n  if (typeof version === 'string')\n    version = new SemVer(version, this.loose);\n\n  for (var i = 0; i < this.set.length; i++) {\n    if (testSet(this.set[i], version))\n      return true;\n  }\n  return false;\n};\n\nfunction testSet(set, version) {\n  for (var i = 0; i < set.length; i++) {\n    if (!set[i].test(version))\n      return false;\n  }\n\n  if (version.prerelease.length) {\n    // Find the set of versions that are allowed to have prereleases\n    // For example, ^1.2.3-pr.1 desugars to >=1.2.3-pr.1 <2.0.0\n    // That should allow `1.2.3-pr.2` to pass.\n    // However, `1.2.4-alpha.notready` should NOT be allowed,\n    // even though it's within the range set by the comparators.\n    for (var i = 0; i < set.length; i++) {\n      debug(set[i].semver);\n      if (set[i].semver === ANY)\n        continue;\n\n      if (set[i].semver.prerelease.length > 0) {\n        var allowed = set[i].semver;\n        if (allowed.major === version.major &&\n            allowed.minor === version.minor &&\n            allowed.patch === version.patch)\n          return true;\n      }\n    }\n\n    // Version has a -pre, but it's not one of the ones we like.\n    return false;\n  }\n\n  return true;\n}\n\nexports.satisfies = satisfies;\nfunction satisfies(version, range, loose) {\n  try {\n    range = new Range(range, loose);\n  } catch (er) {\n    return false;\n  }\n  return range.test(version);\n}\n\nexports.maxSatisfying = maxSatisfying;\nfunction maxSatisfying(versions, range, loose) {\n  var max = null;\n  var maxSV = null;\n  try {\n    var rangeObj = new Range(range, loose);\n  } catch (er) {\n    return null;\n  }\n  versions.forEach(function (v) {\n    if (rangeObj.test(v)) { // satisfies(v, range, loose)\n      if (!max || maxSV.compare(v) === -1) { // compare(max, v, true)\n        max = v;\n        maxSV = new SemVer(max, loose);\n      }\n    }\n  })\n  return max;\n}\n\nexports.minSatisfying = minSatisfying;\nfunction minSatisfying(versions, range, loose) {\n  var min = null;\n  var minSV = null;\n  try {\n    var rangeObj = new Range(range, loose);\n  } catch (er) {\n    return null;\n  }\n  versions.forEach(function (v) {\n    if (rangeObj.test(v)) { // satisfies(v, range, loose)\n      if (!min || minSV.compare(v) === 1) { // compare(min, v, true)\n        min = v;\n        minSV = new SemVer(min, loose);\n      }\n    }\n  })\n  return min;\n}\n\nexports.validRange = validRange;\nfunction validRange(range, loose) {\n  try {\n    // Return '*' instead of '' so that truthiness works.\n    // This will throw if it's invalid anyway\n    return new Range(range, loose).range || '*';\n  } catch (er) {\n    return null;\n  }\n}\n\n// Determine if version is less than all the versions possible in the range\nexports.ltr = ltr;\nfunction ltr(version, range, loose) {\n  return outside(version, range, '<', loose);\n}\n\n// Determine if version is greater than all the versions possible in the range.\nexports.gtr = gtr;\nfunction gtr(version, range, loose) {\n  return outside(version, range, '>', loose);\n}\n\nexports.outside = outside;\nfunction outside(version, range, hilo, loose) {\n  version = new SemVer(version, loose);\n  range = new Range(range, loose);\n\n  var gtfn, ltefn, ltfn, comp, ecomp;\n  switch (hilo) {\n    case '>':\n      gtfn = gt;\n      ltefn = lte;\n      ltfn = lt;\n      comp = '>';\n      ecomp = '>=';\n      break;\n    case '<':\n      gtfn = lt;\n      ltefn = gte;\n      ltfn = gt;\n      comp = '<';\n      ecomp = '<=';\n      break;\n    default:\n      throw new TypeError('Must provide a hilo val of \"<\" or \">\"');\n  }\n\n  // If it satisifes the range it is not outside\n  if (satisfies(version, range, loose)) {\n    return false;\n  }\n\n  // From now on, variable terms are as if we're in \"gtr\" mode.\n  // but note that everything is flipped for the \"ltr\" function.\n\n  for (var i = 0; i < range.set.length; ++i) {\n    var comparators = range.set[i];\n\n    var high = null;\n    var low = null;\n\n    comparators.forEach(function(comparator) {\n      if (comparator.semver === ANY) {\n        comparator = new Comparator('>=0.0.0')\n      }\n      high = high || comparator;\n      low = low || comparator;\n      if (gtfn(comparator.semver, high.semver, loose)) {\n        high = comparator;\n      } else if (ltfn(comparator.semver, low.semver, loose)) {\n        low = comparator;\n      }\n    });\n\n    // If the edge version comparator has a operator then our version\n    // isn't outside it\n    if (high.operator === comp || high.operator === ecomp) {\n      return false;\n    }\n\n    // If the lowest version comparator has an operator and our version\n    // is less than it then it isn't higher than the range\n    if ((!low.operator || low.operator === comp) &&\n        ltefn(version, low.semver)) {\n      return false;\n    } else if (low.operator === ecomp && ltfn(version, low.semver)) {\n      return false;\n    }\n  }\n  return true;\n}\n\nexports.prerelease = prerelease;\nfunction prerelease(version, loose) {\n  var parsed = parse(version, loose);\n  return (parsed && parsed.prerelease.length) ? parsed.prerelease : null;\n}\n\nexports.intersects = intersects;\nfunction intersects(r1, r2, loose) {\n  r1 = new Range(r1, loose)\n  r2 = new Range(r2, loose)\n  return r1.intersects(r2)\n}\n\nexports.coerce = coerce;\nfunction coerce(version) {\n  if (version instanceof SemVer)\n    return version;\n\n  if (typeof version !== 'string')\n    return null;\n\n  var match = version.match(re[COERCE]);\n\n  if (match == null)\n    return null;\n\n  return parse((match[1] || '0') + '.' + (match[2] || '0') + '.' + (match[3] || '0')); \n}\n\n\n//# sourceURL=webpack:///./node_modules/semver/semver.js?");
+exports = module.exports = SemVer;
+
+// The debug function is excluded entirely from the minified version.
+/* nomin */ var debug;
+/* nomin */ if (typeof process === 'object' &&
+    /* nomin */ process.env &&
+    /* nomin */ process.env.NODE_DEBUG &&
+    /* nomin */ /\bsemver\b/i.test(process.env.NODE_DEBUG))
+  /* nomin */ debug = function() {
+    /* nomin */ var args = Array.prototype.slice.call(arguments, 0);
+    /* nomin */ args.unshift('SEMVER');
+    /* nomin */ console.log.apply(console, args);
+    /* nomin */ };
+/* nomin */ else
+  /* nomin */ debug = function() {};
+
+// Note: this is the semver.org version of the spec that it implements
+// Not necessarily the package version of this code.
+exports.SEMVER_SPEC_VERSION = '2.0.0';
+
+var MAX_LENGTH = 256;
+var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 9007199254740991;
+
+// Max safe segment length for coercion.
+var MAX_SAFE_COMPONENT_LENGTH = 16;
+
+// The actual regexps go on exports.re
+var re = exports.re = [];
+var src = exports.src = [];
+var R = 0;
+
+// The following Regular Expressions can be used for tokenizing,
+// validating, and parsing SemVer version strings.
+
+// ## Numeric Identifier
+// A single `0`, or a non-zero digit followed by zero or more digits.
+
+var NUMERICIDENTIFIER = R++;
+src[NUMERICIDENTIFIER] = '0|[1-9]\\d*';
+var NUMERICIDENTIFIERLOOSE = R++;
+src[NUMERICIDENTIFIERLOOSE] = '[0-9]+';
+
+
+// ## Non-numeric Identifier
+// Zero or more digits, followed by a letter or hyphen, and then zero or
+// more letters, digits, or hyphens.
+
+var NONNUMERICIDENTIFIER = R++;
+src[NONNUMERICIDENTIFIER] = '\\d*[a-zA-Z-][a-zA-Z0-9-]*';
+
+
+// ## Main Version
+// Three dot-separated numeric identifiers.
+
+var MAINVERSION = R++;
+src[MAINVERSION] = '(' + src[NUMERICIDENTIFIER] + ')\\.' +
+                   '(' + src[NUMERICIDENTIFIER] + ')\\.' +
+                   '(' + src[NUMERICIDENTIFIER] + ')';
+
+var MAINVERSIONLOOSE = R++;
+src[MAINVERSIONLOOSE] = '(' + src[NUMERICIDENTIFIERLOOSE] + ')\\.' +
+                        '(' + src[NUMERICIDENTIFIERLOOSE] + ')\\.' +
+                        '(' + src[NUMERICIDENTIFIERLOOSE] + ')';
+
+// ## Pre-release Version Identifier
+// A numeric identifier, or a non-numeric identifier.
+
+var PRERELEASEIDENTIFIER = R++;
+src[PRERELEASEIDENTIFIER] = '(?:' + src[NUMERICIDENTIFIER] +
+                            '|' + src[NONNUMERICIDENTIFIER] + ')';
+
+var PRERELEASEIDENTIFIERLOOSE = R++;
+src[PRERELEASEIDENTIFIERLOOSE] = '(?:' + src[NUMERICIDENTIFIERLOOSE] +
+                                 '|' + src[NONNUMERICIDENTIFIER] + ')';
+
+
+// ## Pre-release Version
+// Hyphen, followed by one or more dot-separated pre-release version
+// identifiers.
+
+var PRERELEASE = R++;
+src[PRERELEASE] = '(?:-(' + src[PRERELEASEIDENTIFIER] +
+                  '(?:\\.' + src[PRERELEASEIDENTIFIER] + ')*))';
+
+var PRERELEASELOOSE = R++;
+src[PRERELEASELOOSE] = '(?:-?(' + src[PRERELEASEIDENTIFIERLOOSE] +
+                       '(?:\\.' + src[PRERELEASEIDENTIFIERLOOSE] + ')*))';
+
+// ## Build Metadata Identifier
+// Any combination of digits, letters, or hyphens.
+
+var BUILDIDENTIFIER = R++;
+src[BUILDIDENTIFIER] = '[0-9A-Za-z-]+';
+
+// ## Build Metadata
+// Plus sign, followed by one or more period-separated build metadata
+// identifiers.
+
+var BUILD = R++;
+src[BUILD] = '(?:\\+(' + src[BUILDIDENTIFIER] +
+             '(?:\\.' + src[BUILDIDENTIFIER] + ')*))';
+
+
+// ## Full Version String
+// A main version, followed optionally by a pre-release version and
+// build metadata.
+
+// Note that the only major, minor, patch, and pre-release sections of
+// the version string are capturing groups.  The build metadata is not a
+// capturing group, because it should not ever be used in version
+// comparison.
+
+var FULL = R++;
+var FULLPLAIN = 'v?' + src[MAINVERSION] +
+                src[PRERELEASE] + '?' +
+                src[BUILD] + '?';
+
+src[FULL] = '^' + FULLPLAIN + '$';
+
+// like full, but allows v1.2.3 and =1.2.3, which people do sometimes.
+// also, 1.0.0alpha1 (prerelease without the hyphen) which is pretty
+// common in the npm registry.
+var LOOSEPLAIN = '[v=\\s]*' + src[MAINVERSIONLOOSE] +
+                 src[PRERELEASELOOSE] + '?' +
+                 src[BUILD] + '?';
+
+var LOOSE = R++;
+src[LOOSE] = '^' + LOOSEPLAIN + '$';
+
+var GTLT = R++;
+src[GTLT] = '((?:<|>)?=?)';
+
+// Something like "2.*" or "1.2.x".
+// Note that "x.x" is a valid xRange identifer, meaning "any version"
+// Only the first item is strictly required.
+var XRANGEIDENTIFIERLOOSE = R++;
+src[XRANGEIDENTIFIERLOOSE] = src[NUMERICIDENTIFIERLOOSE] + '|x|X|\\*';
+var XRANGEIDENTIFIER = R++;
+src[XRANGEIDENTIFIER] = src[NUMERICIDENTIFIER] + '|x|X|\\*';
+
+var XRANGEPLAIN = R++;
+src[XRANGEPLAIN] = '[v=\\s]*(' + src[XRANGEIDENTIFIER] + ')' +
+                   '(?:\\.(' + src[XRANGEIDENTIFIER] + ')' +
+                   '(?:\\.(' + src[XRANGEIDENTIFIER] + ')' +
+                   '(?:' + src[PRERELEASE] + ')?' +
+                   src[BUILD] + '?' +
+                   ')?)?';
+
+var XRANGEPLAINLOOSE = R++;
+src[XRANGEPLAINLOOSE] = '[v=\\s]*(' + src[XRANGEIDENTIFIERLOOSE] + ')' +
+                        '(?:\\.(' + src[XRANGEIDENTIFIERLOOSE] + ')' +
+                        '(?:\\.(' + src[XRANGEIDENTIFIERLOOSE] + ')' +
+                        '(?:' + src[PRERELEASELOOSE] + ')?' +
+                        src[BUILD] + '?' +
+                        ')?)?';
+
+var XRANGE = R++;
+src[XRANGE] = '^' + src[GTLT] + '\\s*' + src[XRANGEPLAIN] + '$';
+var XRANGELOOSE = R++;
+src[XRANGELOOSE] = '^' + src[GTLT] + '\\s*' + src[XRANGEPLAINLOOSE] + '$';
+
+// Coercion.
+// Extract anything that could conceivably be a part of a valid semver
+var COERCE = R++;
+src[COERCE] = '(?:^|[^\\d])' +
+              '(\\d{1,' + MAX_SAFE_COMPONENT_LENGTH + '})' +
+              '(?:\\.(\\d{1,' + MAX_SAFE_COMPONENT_LENGTH + '}))?' +
+              '(?:\\.(\\d{1,' + MAX_SAFE_COMPONENT_LENGTH + '}))?' +
+              '(?:$|[^\\d])';
+
+// Tilde ranges.
+// Meaning is "reasonably at or greater than"
+var LONETILDE = R++;
+src[LONETILDE] = '(?:~>?)';
+
+var TILDETRIM = R++;
+src[TILDETRIM] = '(\\s*)' + src[LONETILDE] + '\\s+';
+re[TILDETRIM] = new RegExp(src[TILDETRIM], 'g');
+var tildeTrimReplace = '$1~';
+
+var TILDE = R++;
+src[TILDE] = '^' + src[LONETILDE] + src[XRANGEPLAIN] + '$';
+var TILDELOOSE = R++;
+src[TILDELOOSE] = '^' + src[LONETILDE] + src[XRANGEPLAINLOOSE] + '$';
+
+// Caret ranges.
+// Meaning is "at least and backwards compatible with"
+var LONECARET = R++;
+src[LONECARET] = '(?:\\^)';
+
+var CARETTRIM = R++;
+src[CARETTRIM] = '(\\s*)' + src[LONECARET] + '\\s+';
+re[CARETTRIM] = new RegExp(src[CARETTRIM], 'g');
+var caretTrimReplace = '$1^';
+
+var CARET = R++;
+src[CARET] = '^' + src[LONECARET] + src[XRANGEPLAIN] + '$';
+var CARETLOOSE = R++;
+src[CARETLOOSE] = '^' + src[LONECARET] + src[XRANGEPLAINLOOSE] + '$';
+
+// A simple gt/lt/eq thing, or just "" to indicate "any version"
+var COMPARATORLOOSE = R++;
+src[COMPARATORLOOSE] = '^' + src[GTLT] + '\\s*(' + LOOSEPLAIN + ')$|^$';
+var COMPARATOR = R++;
+src[COMPARATOR] = '^' + src[GTLT] + '\\s*(' + FULLPLAIN + ')$|^$';
+
+
+// An expression to strip any whitespace between the gtlt and the thing
+// it modifies, so that `> 1.2.3` ==> `>1.2.3`
+var COMPARATORTRIM = R++;
+src[COMPARATORTRIM] = '(\\s*)' + src[GTLT] +
+                      '\\s*(' + LOOSEPLAIN + '|' + src[XRANGEPLAIN] + ')';
+
+// this one has to use the /g flag
+re[COMPARATORTRIM] = new RegExp(src[COMPARATORTRIM], 'g');
+var comparatorTrimReplace = '$1$2$3';
+
+
+// Something like `1.2.3 - 1.2.4`
+// Note that these all use the loose form, because they'll be
+// checked against either the strict or loose comparator form
+// later.
+var HYPHENRANGE = R++;
+src[HYPHENRANGE] = '^\\s*(' + src[XRANGEPLAIN] + ')' +
+                   '\\s+-\\s+' +
+                   '(' + src[XRANGEPLAIN] + ')' +
+                   '\\s*$';
+
+var HYPHENRANGELOOSE = R++;
+src[HYPHENRANGELOOSE] = '^\\s*(' + src[XRANGEPLAINLOOSE] + ')' +
+                        '\\s+-\\s+' +
+                        '(' + src[XRANGEPLAINLOOSE] + ')' +
+                        '\\s*$';
+
+// Star ranges basically just allow anything at all.
+var STAR = R++;
+src[STAR] = '(<|>)?=?\\s*\\*';
+
+// Compile to actual regexp objects.
+// All are flag-free, unless they were created above with a flag.
+for (var i = 0; i < R; i++) {
+  debug(i, src[i]);
+  if (!re[i])
+    re[i] = new RegExp(src[i]);
+}
+
+exports.parse = parse;
+function parse(version, loose) {
+  if (version instanceof SemVer)
+    return version;
+
+  if (typeof version !== 'string')
+    return null;
+
+  if (version.length > MAX_LENGTH)
+    return null;
+
+  var r = loose ? re[LOOSE] : re[FULL];
+  if (!r.test(version))
+    return null;
+
+  try {
+    return new SemVer(version, loose);
+  } catch (er) {
+    return null;
+  }
+}
+
+exports.valid = valid;
+function valid(version, loose) {
+  var v = parse(version, loose);
+  return v ? v.version : null;
+}
+
+
+exports.clean = clean;
+function clean(version, loose) {
+  var s = parse(version.trim().replace(/^[=v]+/, ''), loose);
+  return s ? s.version : null;
+}
+
+exports.SemVer = SemVer;
+
+function SemVer(version, loose) {
+  if (version instanceof SemVer) {
+    if (version.loose === loose)
+      return version;
+    else
+      version = version.version;
+  } else if (typeof version !== 'string') {
+    throw new TypeError('Invalid Version: ' + version);
+  }
+
+  if (version.length > MAX_LENGTH)
+    throw new TypeError('version is longer than ' + MAX_LENGTH + ' characters')
+
+  if (!(this instanceof SemVer))
+    return new SemVer(version, loose);
+
+  debug('SemVer', version, loose);
+  this.loose = loose;
+  var m = version.trim().match(loose ? re[LOOSE] : re[FULL]);
+
+  if (!m)
+    throw new TypeError('Invalid Version: ' + version);
+
+  this.raw = version;
+
+  // these are actually numbers
+  this.major = +m[1];
+  this.minor = +m[2];
+  this.patch = +m[3];
+
+  if (this.major > MAX_SAFE_INTEGER || this.major < 0)
+    throw new TypeError('Invalid major version')
+
+  if (this.minor > MAX_SAFE_INTEGER || this.minor < 0)
+    throw new TypeError('Invalid minor version')
+
+  if (this.patch > MAX_SAFE_INTEGER || this.patch < 0)
+    throw new TypeError('Invalid patch version')
+
+  // numberify any prerelease numeric ids
+  if (!m[4])
+    this.prerelease = [];
+  else
+    this.prerelease = m[4].split('.').map(function(id) {
+      if (/^[0-9]+$/.test(id)) {
+        var num = +id;
+        if (num >= 0 && num < MAX_SAFE_INTEGER)
+          return num;
+      }
+      return id;
+    });
+
+  this.build = m[5] ? m[5].split('.') : [];
+  this.format();
+}
+
+SemVer.prototype.format = function() {
+  this.version = this.major + '.' + this.minor + '.' + this.patch;
+  if (this.prerelease.length)
+    this.version += '-' + this.prerelease.join('.');
+  return this.version;
+};
+
+SemVer.prototype.toString = function() {
+  return this.version;
+};
+
+SemVer.prototype.compare = function(other) {
+  debug('SemVer.compare', this.version, this.loose, other);
+  if (!(other instanceof SemVer))
+    other = new SemVer(other, this.loose);
+
+  return this.compareMain(other) || this.comparePre(other);
+};
+
+SemVer.prototype.compareMain = function(other) {
+  if (!(other instanceof SemVer))
+    other = new SemVer(other, this.loose);
+
+  return compareIdentifiers(this.major, other.major) ||
+         compareIdentifiers(this.minor, other.minor) ||
+         compareIdentifiers(this.patch, other.patch);
+};
+
+SemVer.prototype.comparePre = function(other) {
+  if (!(other instanceof SemVer))
+    other = new SemVer(other, this.loose);
+
+  // NOT having a prerelease is > having one
+  if (this.prerelease.length && !other.prerelease.length)
+    return -1;
+  else if (!this.prerelease.length && other.prerelease.length)
+    return 1;
+  else if (!this.prerelease.length && !other.prerelease.length)
+    return 0;
+
+  var i = 0;
+  do {
+    var a = this.prerelease[i];
+    var b = other.prerelease[i];
+    debug('prerelease compare', i, a, b);
+    if (a === undefined && b === undefined)
+      return 0;
+    else if (b === undefined)
+      return 1;
+    else if (a === undefined)
+      return -1;
+    else if (a === b)
+      continue;
+    else
+      return compareIdentifiers(a, b);
+  } while (++i);
+};
+
+// preminor will bump the version up to the next minor release, and immediately
+// down to pre-release. premajor and prepatch work the same way.
+SemVer.prototype.inc = function(release, identifier) {
+  switch (release) {
+    case 'premajor':
+      this.prerelease.length = 0;
+      this.patch = 0;
+      this.minor = 0;
+      this.major++;
+      this.inc('pre', identifier);
+      break;
+    case 'preminor':
+      this.prerelease.length = 0;
+      this.patch = 0;
+      this.minor++;
+      this.inc('pre', identifier);
+      break;
+    case 'prepatch':
+      // If this is already a prerelease, it will bump to the next version
+      // drop any prereleases that might already exist, since they are not
+      // relevant at this point.
+      this.prerelease.length = 0;
+      this.inc('patch', identifier);
+      this.inc('pre', identifier);
+      break;
+    // If the input is a non-prerelease version, this acts the same as
+    // prepatch.
+    case 'prerelease':
+      if (this.prerelease.length === 0)
+        this.inc('patch', identifier);
+      this.inc('pre', identifier);
+      break;
+
+    case 'major':
+      // If this is a pre-major version, bump up to the same major version.
+      // Otherwise increment major.
+      // 1.0.0-5 bumps to 1.0.0
+      // 1.1.0 bumps to 2.0.0
+      if (this.minor !== 0 || this.patch !== 0 || this.prerelease.length === 0)
+        this.major++;
+      this.minor = 0;
+      this.patch = 0;
+      this.prerelease = [];
+      break;
+    case 'minor':
+      // If this is a pre-minor version, bump up to the same minor version.
+      // Otherwise increment minor.
+      // 1.2.0-5 bumps to 1.2.0
+      // 1.2.1 bumps to 1.3.0
+      if (this.patch !== 0 || this.prerelease.length === 0)
+        this.minor++;
+      this.patch = 0;
+      this.prerelease = [];
+      break;
+    case 'patch':
+      // If this is not a pre-release version, it will increment the patch.
+      // If it is a pre-release it will bump up to the same patch version.
+      // 1.2.0-5 patches to 1.2.0
+      // 1.2.0 patches to 1.2.1
+      if (this.prerelease.length === 0)
+        this.patch++;
+      this.prerelease = [];
+      break;
+    // This probably shouldn't be used publicly.
+    // 1.0.0 "pre" would become 1.0.0-0 which is the wrong direction.
+    case 'pre':
+      if (this.prerelease.length === 0)
+        this.prerelease = [0];
+      else {
+        var i = this.prerelease.length;
+        while (--i >= 0) {
+          if (typeof this.prerelease[i] === 'number') {
+            this.prerelease[i]++;
+            i = -2;
+          }
+        }
+        if (i === -1) // didn't increment anything
+          this.prerelease.push(0);
+      }
+      if (identifier) {
+        // 1.2.0-beta.1 bumps to 1.2.0-beta.2,
+        // 1.2.0-beta.fooblz or 1.2.0-beta bumps to 1.2.0-beta.0
+        if (this.prerelease[0] === identifier) {
+          if (isNaN(this.prerelease[1]))
+            this.prerelease = [identifier, 0];
+        } else
+          this.prerelease = [identifier, 0];
+      }
+      break;
+
+    default:
+      throw new Error('invalid increment argument: ' + release);
+  }
+  this.format();
+  this.raw = this.version;
+  return this;
+};
+
+exports.inc = inc;
+function inc(version, release, loose, identifier) {
+  if (typeof(loose) === 'string') {
+    identifier = loose;
+    loose = undefined;
+  }
+
+  try {
+    return new SemVer(version, loose).inc(release, identifier).version;
+  } catch (er) {
+    return null;
+  }
+}
+
+exports.diff = diff;
+function diff(version1, version2) {
+  if (eq(version1, version2)) {
+    return null;
+  } else {
+    var v1 = parse(version1);
+    var v2 = parse(version2);
+    if (v1.prerelease.length || v2.prerelease.length) {
+      for (var key in v1) {
+        if (key === 'major' || key === 'minor' || key === 'patch') {
+          if (v1[key] !== v2[key]) {
+            return 'pre'+key;
+          }
+        }
+      }
+      return 'prerelease';
+    }
+    for (var key in v1) {
+      if (key === 'major' || key === 'minor' || key === 'patch') {
+        if (v1[key] !== v2[key]) {
+          return key;
+        }
+      }
+    }
+  }
+}
+
+exports.compareIdentifiers = compareIdentifiers;
+
+var numeric = /^[0-9]+$/;
+function compareIdentifiers(a, b) {
+  var anum = numeric.test(a);
+  var bnum = numeric.test(b);
+
+  if (anum && bnum) {
+    a = +a;
+    b = +b;
+  }
+
+  return (anum && !bnum) ? -1 :
+         (bnum && !anum) ? 1 :
+         a < b ? -1 :
+         a > b ? 1 :
+         0;
+}
+
+exports.rcompareIdentifiers = rcompareIdentifiers;
+function rcompareIdentifiers(a, b) {
+  return compareIdentifiers(b, a);
+}
+
+exports.major = major;
+function major(a, loose) {
+  return new SemVer(a, loose).major;
+}
+
+exports.minor = minor;
+function minor(a, loose) {
+  return new SemVer(a, loose).minor;
+}
+
+exports.patch = patch;
+function patch(a, loose) {
+  return new SemVer(a, loose).patch;
+}
+
+exports.compare = compare;
+function compare(a, b, loose) {
+  return new SemVer(a, loose).compare(new SemVer(b, loose));
+}
+
+exports.compareLoose = compareLoose;
+function compareLoose(a, b) {
+  return compare(a, b, true);
+}
+
+exports.rcompare = rcompare;
+function rcompare(a, b, loose) {
+  return compare(b, a, loose);
+}
+
+exports.sort = sort;
+function sort(list, loose) {
+  return list.sort(function(a, b) {
+    return exports.compare(a, b, loose);
+  });
+}
+
+exports.rsort = rsort;
+function rsort(list, loose) {
+  return list.sort(function(a, b) {
+    return exports.rcompare(a, b, loose);
+  });
+}
+
+exports.gt = gt;
+function gt(a, b, loose) {
+  return compare(a, b, loose) > 0;
+}
+
+exports.lt = lt;
+function lt(a, b, loose) {
+  return compare(a, b, loose) < 0;
+}
+
+exports.eq = eq;
+function eq(a, b, loose) {
+  return compare(a, b, loose) === 0;
+}
+
+exports.neq = neq;
+function neq(a, b, loose) {
+  return compare(a, b, loose) !== 0;
+}
+
+exports.gte = gte;
+function gte(a, b, loose) {
+  return compare(a, b, loose) >= 0;
+}
+
+exports.lte = lte;
+function lte(a, b, loose) {
+  return compare(a, b, loose) <= 0;
+}
+
+exports.cmp = cmp;
+function cmp(a, op, b, loose) {
+  var ret;
+  switch (op) {
+    case '===':
+      if (typeof a === 'object') a = a.version;
+      if (typeof b === 'object') b = b.version;
+      ret = a === b;
+      break;
+    case '!==':
+      if (typeof a === 'object') a = a.version;
+      if (typeof b === 'object') b = b.version;
+      ret = a !== b;
+      break;
+    case '': case '=': case '==': ret = eq(a, b, loose); break;
+    case '!=': ret = neq(a, b, loose); break;
+    case '>': ret = gt(a, b, loose); break;
+    case '>=': ret = gte(a, b, loose); break;
+    case '<': ret = lt(a, b, loose); break;
+    case '<=': ret = lte(a, b, loose); break;
+    default: throw new TypeError('Invalid operator: ' + op);
+  }
+  return ret;
+}
+
+exports.Comparator = Comparator;
+function Comparator(comp, loose) {
+  if (comp instanceof Comparator) {
+    if (comp.loose === loose)
+      return comp;
+    else
+      comp = comp.value;
+  }
+
+  if (!(this instanceof Comparator))
+    return new Comparator(comp, loose);
+
+  debug('comparator', comp, loose);
+  this.loose = loose;
+  this.parse(comp);
+
+  if (this.semver === ANY)
+    this.value = '';
+  else
+    this.value = this.operator + this.semver.version;
+
+  debug('comp', this);
+}
+
+var ANY = {};
+Comparator.prototype.parse = function(comp) {
+  var r = this.loose ? re[COMPARATORLOOSE] : re[COMPARATOR];
+  var m = comp.match(r);
+
+  if (!m)
+    throw new TypeError('Invalid comparator: ' + comp);
+
+  this.operator = m[1];
+  if (this.operator === '=')
+    this.operator = '';
+
+  // if it literally is just '>' or '' then allow anything.
+  if (!m[2])
+    this.semver = ANY;
+  else
+    this.semver = new SemVer(m[2], this.loose);
+};
+
+Comparator.prototype.toString = function() {
+  return this.value;
+};
+
+Comparator.prototype.test = function(version) {
+  debug('Comparator.test', version, this.loose);
+
+  if (this.semver === ANY)
+    return true;
+
+  if (typeof version === 'string')
+    version = new SemVer(version, this.loose);
+
+  return cmp(version, this.operator, this.semver, this.loose);
+};
+
+Comparator.prototype.intersects = function(comp, loose) {
+  if (!(comp instanceof Comparator)) {
+    throw new TypeError('a Comparator is required');
+  }
+
+  var rangeTmp;
+
+  if (this.operator === '') {
+    rangeTmp = new Range(comp.value, loose);
+    return satisfies(this.value, rangeTmp, loose);
+  } else if (comp.operator === '') {
+    rangeTmp = new Range(this.value, loose);
+    return satisfies(comp.semver, rangeTmp, loose);
+  }
+
+  var sameDirectionIncreasing =
+    (this.operator === '>=' || this.operator === '>') &&
+    (comp.operator === '>=' || comp.operator === '>');
+  var sameDirectionDecreasing =
+    (this.operator === '<=' || this.operator === '<') &&
+    (comp.operator === '<=' || comp.operator === '<');
+  var sameSemVer = this.semver.version === comp.semver.version;
+  var differentDirectionsInclusive =
+    (this.operator === '>=' || this.operator === '<=') &&
+    (comp.operator === '>=' || comp.operator === '<=');
+  var oppositeDirectionsLessThan =
+    cmp(this.semver, '<', comp.semver, loose) &&
+    ((this.operator === '>=' || this.operator === '>') &&
+    (comp.operator === '<=' || comp.operator === '<'));
+  var oppositeDirectionsGreaterThan =
+    cmp(this.semver, '>', comp.semver, loose) &&
+    ((this.operator === '<=' || this.operator === '<') &&
+    (comp.operator === '>=' || comp.operator === '>'));
+
+  return sameDirectionIncreasing || sameDirectionDecreasing ||
+    (sameSemVer && differentDirectionsInclusive) ||
+    oppositeDirectionsLessThan || oppositeDirectionsGreaterThan;
+};
+
+
+exports.Range = Range;
+function Range(range, loose) {
+  if (range instanceof Range) {
+    if (range.loose === loose) {
+      return range;
+    } else {
+      return new Range(range.raw, loose);
+    }
+  }
+
+  if (range instanceof Comparator) {
+    return new Range(range.value, loose);
+  }
+
+  if (!(this instanceof Range))
+    return new Range(range, loose);
+
+  this.loose = loose;
+
+  // First, split based on boolean or ||
+  this.raw = range;
+  this.set = range.split(/\s*\|\|\s*/).map(function(range) {
+    return this.parseRange(range.trim());
+  }, this).filter(function(c) {
+    // throw out any that are not relevant for whatever reason
+    return c.length;
+  });
+
+  if (!this.set.length) {
+    throw new TypeError('Invalid SemVer Range: ' + range);
+  }
+
+  this.format();
+}
+
+Range.prototype.format = function() {
+  this.range = this.set.map(function(comps) {
+    return comps.join(' ').trim();
+  }).join('||').trim();
+  return this.range;
+};
+
+Range.prototype.toString = function() {
+  return this.range;
+};
+
+Range.prototype.parseRange = function(range) {
+  var loose = this.loose;
+  range = range.trim();
+  debug('range', range, loose);
+  // `1.2.3 - 1.2.4` => `>=1.2.3 <=1.2.4`
+  var hr = loose ? re[HYPHENRANGELOOSE] : re[HYPHENRANGE];
+  range = range.replace(hr, hyphenReplace);
+  debug('hyphen replace', range);
+  // `> 1.2.3 < 1.2.5` => `>1.2.3 <1.2.5`
+  range = range.replace(re[COMPARATORTRIM], comparatorTrimReplace);
+  debug('comparator trim', range, re[COMPARATORTRIM]);
+
+  // `~ 1.2.3` => `~1.2.3`
+  range = range.replace(re[TILDETRIM], tildeTrimReplace);
+
+  // `^ 1.2.3` => `^1.2.3`
+  range = range.replace(re[CARETTRIM], caretTrimReplace);
+
+  // normalize spaces
+  range = range.split(/\s+/).join(' ');
+
+  // At this point, the range is completely trimmed and
+  // ready to be split into comparators.
+
+  var compRe = loose ? re[COMPARATORLOOSE] : re[COMPARATOR];
+  var set = range.split(' ').map(function(comp) {
+    return parseComparator(comp, loose);
+  }).join(' ').split(/\s+/);
+  if (this.loose) {
+    // in loose mode, throw out any that are not valid comparators
+    set = set.filter(function(comp) {
+      return !!comp.match(compRe);
+    });
+  }
+  set = set.map(function(comp) {
+    return new Comparator(comp, loose);
+  });
+
+  return set;
+};
+
+Range.prototype.intersects = function(range, loose) {
+  if (!(range instanceof Range)) {
+    throw new TypeError('a Range is required');
+  }
+
+  return this.set.some(function(thisComparators) {
+    return thisComparators.every(function(thisComparator) {
+      return range.set.some(function(rangeComparators) {
+        return rangeComparators.every(function(rangeComparator) {
+          return thisComparator.intersects(rangeComparator, loose);
+        });
+      });
+    });
+  });
+};
+
+// Mostly just for testing and legacy API reasons
+exports.toComparators = toComparators;
+function toComparators(range, loose) {
+  return new Range(range, loose).set.map(function(comp) {
+    return comp.map(function(c) {
+      return c.value;
+    }).join(' ').trim().split(' ');
+  });
+}
+
+// comprised of xranges, tildes, stars, and gtlt's at this point.
+// already replaced the hyphen ranges
+// turn into a set of JUST comparators.
+function parseComparator(comp, loose) {
+  debug('comp', comp);
+  comp = replaceCarets(comp, loose);
+  debug('caret', comp);
+  comp = replaceTildes(comp, loose);
+  debug('tildes', comp);
+  comp = replaceXRanges(comp, loose);
+  debug('xrange', comp);
+  comp = replaceStars(comp, loose);
+  debug('stars', comp);
+  return comp;
+}
+
+function isX(id) {
+  return !id || id.toLowerCase() === 'x' || id === '*';
+}
+
+// ~, ~> --> * (any, kinda silly)
+// ~2, ~2.x, ~2.x.x, ~>2, ~>2.x ~>2.x.x --> >=2.0.0 <3.0.0
+// ~2.0, ~2.0.x, ~>2.0, ~>2.0.x --> >=2.0.0 <2.1.0
+// ~1.2, ~1.2.x, ~>1.2, ~>1.2.x --> >=1.2.0 <1.3.0
+// ~1.2.3, ~>1.2.3 --> >=1.2.3 <1.3.0
+// ~1.2.0, ~>1.2.0 --> >=1.2.0 <1.3.0
+function replaceTildes(comp, loose) {
+  return comp.trim().split(/\s+/).map(function(comp) {
+    return replaceTilde(comp, loose);
+  }).join(' ');
+}
+
+function replaceTilde(comp, loose) {
+  var r = loose ? re[TILDELOOSE] : re[TILDE];
+  return comp.replace(r, function(_, M, m, p, pr) {
+    debug('tilde', comp, _, M, m, p, pr);
+    var ret;
+
+    if (isX(M))
+      ret = '';
+    else if (isX(m))
+      ret = '>=' + M + '.0.0 <' + (+M + 1) + '.0.0';
+    else if (isX(p))
+      // ~1.2 == >=1.2.0 <1.3.0
+      ret = '>=' + M + '.' + m + '.0 <' + M + '.' + (+m + 1) + '.0';
+    else if (pr) {
+      debug('replaceTilde pr', pr);
+      if (pr.charAt(0) !== '-')
+        pr = '-' + pr;
+      ret = '>=' + M + '.' + m + '.' + p + pr +
+            ' <' + M + '.' + (+m + 1) + '.0';
+    } else
+      // ~1.2.3 == >=1.2.3 <1.3.0
+      ret = '>=' + M + '.' + m + '.' + p +
+            ' <' + M + '.' + (+m + 1) + '.0';
+
+    debug('tilde return', ret);
+    return ret;
+  });
+}
+
+// ^ --> * (any, kinda silly)
+// ^2, ^2.x, ^2.x.x --> >=2.0.0 <3.0.0
+// ^2.0, ^2.0.x --> >=2.0.0 <3.0.0
+// ^1.2, ^1.2.x --> >=1.2.0 <2.0.0
+// ^1.2.3 --> >=1.2.3 <2.0.0
+// ^1.2.0 --> >=1.2.0 <2.0.0
+function replaceCarets(comp, loose) {
+  return comp.trim().split(/\s+/).map(function(comp) {
+    return replaceCaret(comp, loose);
+  }).join(' ');
+}
+
+function replaceCaret(comp, loose) {
+  debug('caret', comp, loose);
+  var r = loose ? re[CARETLOOSE] : re[CARET];
+  return comp.replace(r, function(_, M, m, p, pr) {
+    debug('caret', comp, _, M, m, p, pr);
+    var ret;
+
+    if (isX(M))
+      ret = '';
+    else if (isX(m))
+      ret = '>=' + M + '.0.0 <' + (+M + 1) + '.0.0';
+    else if (isX(p)) {
+      if (M === '0')
+        ret = '>=' + M + '.' + m + '.0 <' + M + '.' + (+m + 1) + '.0';
+      else
+        ret = '>=' + M + '.' + m + '.0 <' + (+M + 1) + '.0.0';
+    } else if (pr) {
+      debug('replaceCaret pr', pr);
+      if (pr.charAt(0) !== '-')
+        pr = '-' + pr;
+      if (M === '0') {
+        if (m === '0')
+          ret = '>=' + M + '.' + m + '.' + p + pr +
+                ' <' + M + '.' + m + '.' + (+p + 1);
+        else
+          ret = '>=' + M + '.' + m + '.' + p + pr +
+                ' <' + M + '.' + (+m + 1) + '.0';
+      } else
+        ret = '>=' + M + '.' + m + '.' + p + pr +
+              ' <' + (+M + 1) + '.0.0';
+    } else {
+      debug('no pr');
+      if (M === '0') {
+        if (m === '0')
+          ret = '>=' + M + '.' + m + '.' + p +
+                ' <' + M + '.' + m + '.' + (+p + 1);
+        else
+          ret = '>=' + M + '.' + m + '.' + p +
+                ' <' + M + '.' + (+m + 1) + '.0';
+      } else
+        ret = '>=' + M + '.' + m + '.' + p +
+              ' <' + (+M + 1) + '.0.0';
+    }
+
+    debug('caret return', ret);
+    return ret;
+  });
+}
+
+function replaceXRanges(comp, loose) {
+  debug('replaceXRanges', comp, loose);
+  return comp.split(/\s+/).map(function(comp) {
+    return replaceXRange(comp, loose);
+  }).join(' ');
+}
+
+function replaceXRange(comp, loose) {
+  comp = comp.trim();
+  var r = loose ? re[XRANGELOOSE] : re[XRANGE];
+  return comp.replace(r, function(ret, gtlt, M, m, p, pr) {
+    debug('xRange', comp, ret, gtlt, M, m, p, pr);
+    var xM = isX(M);
+    var xm = xM || isX(m);
+    var xp = xm || isX(p);
+    var anyX = xp;
+
+    if (gtlt === '=' && anyX)
+      gtlt = '';
+
+    if (xM) {
+      if (gtlt === '>' || gtlt === '<') {
+        // nothing is allowed
+        ret = '<0.0.0';
+      } else {
+        // nothing is forbidden
+        ret = '*';
+      }
+    } else if (gtlt && anyX) {
+      // replace X with 0
+      if (xm)
+        m = 0;
+      if (xp)
+        p = 0;
+
+      if (gtlt === '>') {
+        // >1 => >=2.0.0
+        // >1.2 => >=1.3.0
+        // >1.2.3 => >= 1.2.4
+        gtlt = '>=';
+        if (xm) {
+          M = +M + 1;
+          m = 0;
+          p = 0;
+        } else if (xp) {
+          m = +m + 1;
+          p = 0;
+        }
+      } else if (gtlt === '<=') {
+        // <=0.7.x is actually <0.8.0, since any 0.7.x should
+        // pass.  Similarly, <=7.x is actually <8.0.0, etc.
+        gtlt = '<';
+        if (xm)
+          M = +M + 1;
+        else
+          m = +m + 1;
+      }
+
+      ret = gtlt + M + '.' + m + '.' + p;
+    } else if (xm) {
+      ret = '>=' + M + '.0.0 <' + (+M + 1) + '.0.0';
+    } else if (xp) {
+      ret = '>=' + M + '.' + m + '.0 <' + M + '.' + (+m + 1) + '.0';
+    }
+
+    debug('xRange return', ret);
+
+    return ret;
+  });
+}
+
+// Because * is AND-ed with everything else in the comparator,
+// and '' means "any version", just remove the *s entirely.
+function replaceStars(comp, loose) {
+  debug('replaceStars', comp, loose);
+  // Looseness is ignored here.  star is always as loose as it gets!
+  return comp.trim().replace(re[STAR], '');
+}
+
+// This function is passed to string.replace(re[HYPHENRANGE])
+// M, m, patch, prerelease, build
+// 1.2 - 3.4.5 => >=1.2.0 <=3.4.5
+// 1.2.3 - 3.4 => >=1.2.0 <3.5.0 Any 3.4.x will do
+// 1.2 - 3.4 => >=1.2.0 <3.5.0
+function hyphenReplace($0,
+                       from, fM, fm, fp, fpr, fb,
+                       to, tM, tm, tp, tpr, tb) {
+
+  if (isX(fM))
+    from = '';
+  else if (isX(fm))
+    from = '>=' + fM + '.0.0';
+  else if (isX(fp))
+    from = '>=' + fM + '.' + fm + '.0';
+  else
+    from = '>=' + from;
+
+  if (isX(tM))
+    to = '';
+  else if (isX(tm))
+    to = '<' + (+tM + 1) + '.0.0';
+  else if (isX(tp))
+    to = '<' + tM + '.' + (+tm + 1) + '.0';
+  else if (tpr)
+    to = '<=' + tM + '.' + tm + '.' + tp + '-' + tpr;
+  else
+    to = '<=' + to;
+
+  return (from + ' ' + to).trim();
+}
+
+
+// if ANY of the sets match ALL of its comparators, then pass
+Range.prototype.test = function(version) {
+  if (!version)
+    return false;
+
+  if (typeof version === 'string')
+    version = new SemVer(version, this.loose);
+
+  for (var i = 0; i < this.set.length; i++) {
+    if (testSet(this.set[i], version))
+      return true;
+  }
+  return false;
+};
+
+function testSet(set, version) {
+  for (var i = 0; i < set.length; i++) {
+    if (!set[i].test(version))
+      return false;
+  }
+
+  if (version.prerelease.length) {
+    // Find the set of versions that are allowed to have prereleases
+    // For example, ^1.2.3-pr.1 desugars to >=1.2.3-pr.1 <2.0.0
+    // That should allow `1.2.3-pr.2` to pass.
+    // However, `1.2.4-alpha.notready` should NOT be allowed,
+    // even though it's within the range set by the comparators.
+    for (var i = 0; i < set.length; i++) {
+      debug(set[i].semver);
+      if (set[i].semver === ANY)
+        continue;
+
+      if (set[i].semver.prerelease.length > 0) {
+        var allowed = set[i].semver;
+        if (allowed.major === version.major &&
+            allowed.minor === version.minor &&
+            allowed.patch === version.patch)
+          return true;
+      }
+    }
+
+    // Version has a -pre, but it's not one of the ones we like.
+    return false;
+  }
+
+  return true;
+}
+
+exports.satisfies = satisfies;
+function satisfies(version, range, loose) {
+  try {
+    range = new Range(range, loose);
+  } catch (er) {
+    return false;
+  }
+  return range.test(version);
+}
+
+exports.maxSatisfying = maxSatisfying;
+function maxSatisfying(versions, range, loose) {
+  var max = null;
+  var maxSV = null;
+  try {
+    var rangeObj = new Range(range, loose);
+  } catch (er) {
+    return null;
+  }
+  versions.forEach(function (v) {
+    if (rangeObj.test(v)) { // satisfies(v, range, loose)
+      if (!max || maxSV.compare(v) === -1) { // compare(max, v, true)
+        max = v;
+        maxSV = new SemVer(max, loose);
+      }
+    }
+  })
+  return max;
+}
+
+exports.minSatisfying = minSatisfying;
+function minSatisfying(versions, range, loose) {
+  var min = null;
+  var minSV = null;
+  try {
+    var rangeObj = new Range(range, loose);
+  } catch (er) {
+    return null;
+  }
+  versions.forEach(function (v) {
+    if (rangeObj.test(v)) { // satisfies(v, range, loose)
+      if (!min || minSV.compare(v) === 1) { // compare(min, v, true)
+        min = v;
+        minSV = new SemVer(min, loose);
+      }
+    }
+  })
+  return min;
+}
+
+exports.validRange = validRange;
+function validRange(range, loose) {
+  try {
+    // Return '*' instead of '' so that truthiness works.
+    // This will throw if it's invalid anyway
+    return new Range(range, loose).range || '*';
+  } catch (er) {
+    return null;
+  }
+}
+
+// Determine if version is less than all the versions possible in the range
+exports.ltr = ltr;
+function ltr(version, range, loose) {
+  return outside(version, range, '<', loose);
+}
+
+// Determine if version is greater than all the versions possible in the range.
+exports.gtr = gtr;
+function gtr(version, range, loose) {
+  return outside(version, range, '>', loose);
+}
+
+exports.outside = outside;
+function outside(version, range, hilo, loose) {
+  version = new SemVer(version, loose);
+  range = new Range(range, loose);
+
+  var gtfn, ltefn, ltfn, comp, ecomp;
+  switch (hilo) {
+    case '>':
+      gtfn = gt;
+      ltefn = lte;
+      ltfn = lt;
+      comp = '>';
+      ecomp = '>=';
+      break;
+    case '<':
+      gtfn = lt;
+      ltefn = gte;
+      ltfn = gt;
+      comp = '<';
+      ecomp = '<=';
+      break;
+    default:
+      throw new TypeError('Must provide a hilo val of "<" or ">"');
+  }
+
+  // If it satisifes the range it is not outside
+  if (satisfies(version, range, loose)) {
+    return false;
+  }
+
+  // From now on, variable terms are as if we're in "gtr" mode.
+  // but note that everything is flipped for the "ltr" function.
+
+  for (var i = 0; i < range.set.length; ++i) {
+    var comparators = range.set[i];
+
+    var high = null;
+    var low = null;
+
+    comparators.forEach(function(comparator) {
+      if (comparator.semver === ANY) {
+        comparator = new Comparator('>=0.0.0')
+      }
+      high = high || comparator;
+      low = low || comparator;
+      if (gtfn(comparator.semver, high.semver, loose)) {
+        high = comparator;
+      } else if (ltfn(comparator.semver, low.semver, loose)) {
+        low = comparator;
+      }
+    });
+
+    // If the edge version comparator has a operator then our version
+    // isn't outside it
+    if (high.operator === comp || high.operator === ecomp) {
+      return false;
+    }
+
+    // If the lowest version comparator has an operator and our version
+    // is less than it then it isn't higher than the range
+    if ((!low.operator || low.operator === comp) &&
+        ltefn(version, low.semver)) {
+      return false;
+    } else if (low.operator === ecomp && ltfn(version, low.semver)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+exports.prerelease = prerelease;
+function prerelease(version, loose) {
+  var parsed = parse(version, loose);
+  return (parsed && parsed.prerelease.length) ? parsed.prerelease : null;
+}
+
+exports.intersects = intersects;
+function intersects(r1, r2, loose) {
+  r1 = new Range(r1, loose)
+  r2 = new Range(r2, loose)
+  return r1.intersects(r2)
+}
+
+exports.coerce = coerce;
+function coerce(version) {
+  if (version instanceof SemVer)
+    return version;
+
+  if (typeof version !== 'string')
+    return null;
+
+  var match = version.match(re[COERCE]);
+
+  if (match == null)
+    return null;
+
+  return parse((match[1] || '0') + '.' + (match[2] || '0') + '.' + (match[3] || '0')); 
+}
+
 
 /***/ }),
 
@@ -415,7 +6341,64 @@ eval("exports = module.exports = SemVer;\n\n// The debug function is excluded en
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-eval("// Generated by CoffeeScript 1.3.3\n(function() {\n  var scan;\n\n  scan = function(string, pattern, callback) {\n    var match, result;\n    result = \"\";\n    while (string.length > 0) {\n      match = string.match(pattern);\n      if (match) {\n        result += string.slice(0, match.index);\n        result += callback(match);\n        string = string.slice(match.index + match[0].length);\n      } else {\n        result += string;\n        string = \"\";\n      }\n    }\n    return result;\n  };\n\n  exports.split = function(line) {\n    var field, words;\n    if (line == null) {\n      line = \"\";\n    }\n    words = [];\n    field = \"\";\n    scan(line, /\\s*(?:([^\\s\\\\\\'\\\"]+)|'((?:[^\\'\\\\]|\\\\.)*)'|\"((?:[^\\\"\\\\]|\\\\.)*)\"|(\\\\.?)|(\\S))(\\s|$)?/, function(match) {\n      var dq, escape, garbage, raw, seperator, sq, word;\n      raw = match[0], word = match[1], sq = match[2], dq = match[3], escape = match[4], garbage = match[5], seperator = match[6];\n      if (garbage != null) {\n        throw new Error(\"Unmatched quote\");\n      }\n      field += word || (sq || dq || escape).replace(/\\\\(?=.)/, \"\");\n      if (seperator != null) {\n        words.push(field);\n        return field = \"\";\n      }\n    });\n    if (field) {\n      words.push(field);\n    }\n    return words;\n  };\n\n  exports.escape = function(str) {\n    if (str == null) {\n      str = \"\";\n    }\n    if (str == null) {\n      return \"''\";\n    }\n    return str.replace(/([^A-Za-z0-9_\\-.,:\\/@\\n])/g, \"\\\\$1\").replace(/\\n/g, \"'\\n'\");\n  };\n\n}).call(this);\n\n\n//# sourceURL=webpack:///./node_modules/shellwords/lib/shellwords.js?");
+// Generated by CoffeeScript 1.3.3
+(function() {
+  var scan;
+
+  scan = function(string, pattern, callback) {
+    var match, result;
+    result = "";
+    while (string.length > 0) {
+      match = string.match(pattern);
+      if (match) {
+        result += string.slice(0, match.index);
+        result += callback(match);
+        string = string.slice(match.index + match[0].length);
+      } else {
+        result += string;
+        string = "";
+      }
+    }
+    return result;
+  };
+
+  exports.split = function(line) {
+    var field, words;
+    if (line == null) {
+      line = "";
+    }
+    words = [];
+    field = "";
+    scan(line, /\s*(?:([^\s\\\'\"]+)|'((?:[^\'\\]|\\.)*)'|"((?:[^\"\\]|\\.)*)"|(\\.?)|(\S))(\s|$)?/, function(match) {
+      var dq, escape, garbage, raw, seperator, sq, word;
+      raw = match[0], word = match[1], sq = match[2], dq = match[3], escape = match[4], garbage = match[5], seperator = match[6];
+      if (garbage != null) {
+        throw new Error("Unmatched quote");
+      }
+      field += word || (sq || dq || escape).replace(/\\(?=.)/, "");
+      if (seperator != null) {
+        words.push(field);
+        return field = "";
+      }
+    });
+    if (field) {
+      words.push(field);
+    }
+    return words;
+  };
+
+  exports.escape = function(str) {
+    if (str == null) {
+      str = "";
+    }
+    if (str == null) {
+      return "''";
+    }
+    return str.replace(/([^A-Za-z0-9_\-.,:\/@\n])/g, "\\$1").replace(/\n/g, "'\n'");
+  };
+
+}).call(this);
+
 
 /***/ }),
 
@@ -426,7 +6409,1734 @@ eval("// Generated by CoffeeScript 1.3.3\n(function() {\n  var scan;\n\n  scan =
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("/* WEBPACK VAR INJECTION */(function(module) {var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscore.js 1.9.1\n//     http://underscorejs.org\n//     (c) 2009-2018 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors\n//     Underscore may be freely distributed under the MIT license.\n\n(function() {\n\n  // Baseline setup\n  // --------------\n\n  // Establish the root object, `window` (`self`) in the browser, `global`\n  // on the server, or `this` in some virtual machines. We use `self`\n  // instead of `window` for `WebWorker` support.\n  var root = typeof self == 'object' && self.self === self && self ||\n            typeof global == 'object' && global.global === global && global ||\n            this ||\n            {};\n\n  // Save the previous value of the `_` variable.\n  var previousUnderscore = root._;\n\n  // Save bytes in the minified (but not gzipped) version:\n  var ArrayProto = Array.prototype, ObjProto = Object.prototype;\n  var SymbolProto = typeof Symbol !== 'undefined' ? Symbol.prototype : null;\n\n  // Create quick reference variables for speed access to core prototypes.\n  var push = ArrayProto.push,\n      slice = ArrayProto.slice,\n      toString = ObjProto.toString,\n      hasOwnProperty = ObjProto.hasOwnProperty;\n\n  // All **ECMAScript 5** native function implementations that we hope to use\n  // are declared here.\n  var nativeIsArray = Array.isArray,\n      nativeKeys = Object.keys,\n      nativeCreate = Object.create;\n\n  // Naked function reference for surrogate-prototype-swapping.\n  var Ctor = function(){};\n\n  // Create a safe reference to the Underscore object for use below.\n  var _ = function(obj) {\n    if (obj instanceof _) return obj;\n    if (!(this instanceof _)) return new _(obj);\n    this._wrapped = obj;\n  };\n\n  // Export the Underscore object for **Node.js**, with\n  // backwards-compatibility for their old module API. If we're in\n  // the browser, add `_` as a global object.\n  // (`nodeType` is checked to ensure that `module`\n  // and `exports` are not HTML elements.)\n  if (typeof exports != 'undefined' && !exports.nodeType) {\n    if (typeof module != 'undefined' && !module.nodeType && module.exports) {\n      exports = module.exports = _;\n    }\n    exports._ = _;\n  } else {\n    root._ = _;\n  }\n\n  // Current version.\n  _.VERSION = '1.9.1';\n\n  // Internal function that returns an efficient (for current engines) version\n  // of the passed-in callback, to be repeatedly applied in other Underscore\n  // functions.\n  var optimizeCb = function(func, context, argCount) {\n    if (context === void 0) return func;\n    switch (argCount == null ? 3 : argCount) {\n      case 1: return function(value) {\n        return func.call(context, value);\n      };\n      // The 2-argument case is omitted because we’re not using it.\n      case 3: return function(value, index, collection) {\n        return func.call(context, value, index, collection);\n      };\n      case 4: return function(accumulator, value, index, collection) {\n        return func.call(context, accumulator, value, index, collection);\n      };\n    }\n    return function() {\n      return func.apply(context, arguments);\n    };\n  };\n\n  var builtinIteratee;\n\n  // An internal function to generate callbacks that can be applied to each\n  // element in a collection, returning the desired result — either `identity`,\n  // an arbitrary callback, a property matcher, or a property accessor.\n  var cb = function(value, context, argCount) {\n    if (_.iteratee !== builtinIteratee) return _.iteratee(value, context);\n    if (value == null) return _.identity;\n    if (_.isFunction(value)) return optimizeCb(value, context, argCount);\n    if (_.isObject(value) && !_.isArray(value)) return _.matcher(value);\n    return _.property(value);\n  };\n\n  // External wrapper for our callback generator. Users may customize\n  // `_.iteratee` if they want additional predicate/iteratee shorthand styles.\n  // This abstraction hides the internal-only argCount argument.\n  _.iteratee = builtinIteratee = function(value, context) {\n    return cb(value, context, Infinity);\n  };\n\n  // Some functions take a variable number of arguments, or a few expected\n  // arguments at the beginning and then a variable number of values to operate\n  // on. This helper accumulates all remaining arguments past the function’s\n  // argument length (or an explicit `startIndex`), into an array that becomes\n  // the last argument. Similar to ES6’s \"rest parameter\".\n  var restArguments = function(func, startIndex) {\n    startIndex = startIndex == null ? func.length - 1 : +startIndex;\n    return function() {\n      var length = Math.max(arguments.length - startIndex, 0),\n          rest = Array(length),\n          index = 0;\n      for (; index < length; index++) {\n        rest[index] = arguments[index + startIndex];\n      }\n      switch (startIndex) {\n        case 0: return func.call(this, rest);\n        case 1: return func.call(this, arguments[0], rest);\n        case 2: return func.call(this, arguments[0], arguments[1], rest);\n      }\n      var args = Array(startIndex + 1);\n      for (index = 0; index < startIndex; index++) {\n        args[index] = arguments[index];\n      }\n      args[startIndex] = rest;\n      return func.apply(this, args);\n    };\n  };\n\n  // An internal function for creating a new object that inherits from another.\n  var baseCreate = function(prototype) {\n    if (!_.isObject(prototype)) return {};\n    if (nativeCreate) return nativeCreate(prototype);\n    Ctor.prototype = prototype;\n    var result = new Ctor;\n    Ctor.prototype = null;\n    return result;\n  };\n\n  var shallowProperty = function(key) {\n    return function(obj) {\n      return obj == null ? void 0 : obj[key];\n    };\n  };\n\n  var has = function(obj, path) {\n    return obj != null && hasOwnProperty.call(obj, path);\n  }\n\n  var deepGet = function(obj, path) {\n    var length = path.length;\n    for (var i = 0; i < length; i++) {\n      if (obj == null) return void 0;\n      obj = obj[path[i]];\n    }\n    return length ? obj : void 0;\n  };\n\n  // Helper for collection methods to determine whether a collection\n  // should be iterated as an array or as an object.\n  // Related: http://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength\n  // Avoids a very nasty iOS 8 JIT bug on ARM-64. #2094\n  var MAX_ARRAY_INDEX = Math.pow(2, 53) - 1;\n  var getLength = shallowProperty('length');\n  var isArrayLike = function(collection) {\n    var length = getLength(collection);\n    return typeof length == 'number' && length >= 0 && length <= MAX_ARRAY_INDEX;\n  };\n\n  // Collection Functions\n  // --------------------\n\n  // The cornerstone, an `each` implementation, aka `forEach`.\n  // Handles raw objects in addition to array-likes. Treats all\n  // sparse array-likes as if they were dense.\n  _.each = _.forEach = function(obj, iteratee, context) {\n    iteratee = optimizeCb(iteratee, context);\n    var i, length;\n    if (isArrayLike(obj)) {\n      for (i = 0, length = obj.length; i < length; i++) {\n        iteratee(obj[i], i, obj);\n      }\n    } else {\n      var keys = _.keys(obj);\n      for (i = 0, length = keys.length; i < length; i++) {\n        iteratee(obj[keys[i]], keys[i], obj);\n      }\n    }\n    return obj;\n  };\n\n  // Return the results of applying the iteratee to each element.\n  _.map = _.collect = function(obj, iteratee, context) {\n    iteratee = cb(iteratee, context);\n    var keys = !isArrayLike(obj) && _.keys(obj),\n        length = (keys || obj).length,\n        results = Array(length);\n    for (var index = 0; index < length; index++) {\n      var currentKey = keys ? keys[index] : index;\n      results[index] = iteratee(obj[currentKey], currentKey, obj);\n    }\n    return results;\n  };\n\n  // Create a reducing function iterating left or right.\n  var createReduce = function(dir) {\n    // Wrap code that reassigns argument variables in a separate function than\n    // the one that accesses `arguments.length` to avoid a perf hit. (#1991)\n    var reducer = function(obj, iteratee, memo, initial) {\n      var keys = !isArrayLike(obj) && _.keys(obj),\n          length = (keys || obj).length,\n          index = dir > 0 ? 0 : length - 1;\n      if (!initial) {\n        memo = obj[keys ? keys[index] : index];\n        index += dir;\n      }\n      for (; index >= 0 && index < length; index += dir) {\n        var currentKey = keys ? keys[index] : index;\n        memo = iteratee(memo, obj[currentKey], currentKey, obj);\n      }\n      return memo;\n    };\n\n    return function(obj, iteratee, memo, context) {\n      var initial = arguments.length >= 3;\n      return reducer(obj, optimizeCb(iteratee, context, 4), memo, initial);\n    };\n  };\n\n  // **Reduce** builds up a single result from a list of values, aka `inject`,\n  // or `foldl`.\n  _.reduce = _.foldl = _.inject = createReduce(1);\n\n  // The right-associative version of reduce, also known as `foldr`.\n  _.reduceRight = _.foldr = createReduce(-1);\n\n  // Return the first value which passes a truth test. Aliased as `detect`.\n  _.find = _.detect = function(obj, predicate, context) {\n    var keyFinder = isArrayLike(obj) ? _.findIndex : _.findKey;\n    var key = keyFinder(obj, predicate, context);\n    if (key !== void 0 && key !== -1) return obj[key];\n  };\n\n  // Return all the elements that pass a truth test.\n  // Aliased as `select`.\n  _.filter = _.select = function(obj, predicate, context) {\n    var results = [];\n    predicate = cb(predicate, context);\n    _.each(obj, function(value, index, list) {\n      if (predicate(value, index, list)) results.push(value);\n    });\n    return results;\n  };\n\n  // Return all the elements for which a truth test fails.\n  _.reject = function(obj, predicate, context) {\n    return _.filter(obj, _.negate(cb(predicate)), context);\n  };\n\n  // Determine whether all of the elements match a truth test.\n  // Aliased as `all`.\n  _.every = _.all = function(obj, predicate, context) {\n    predicate = cb(predicate, context);\n    var keys = !isArrayLike(obj) && _.keys(obj),\n        length = (keys || obj).length;\n    for (var index = 0; index < length; index++) {\n      var currentKey = keys ? keys[index] : index;\n      if (!predicate(obj[currentKey], currentKey, obj)) return false;\n    }\n    return true;\n  };\n\n  // Determine if at least one element in the object matches a truth test.\n  // Aliased as `any`.\n  _.some = _.any = function(obj, predicate, context) {\n    predicate = cb(predicate, context);\n    var keys = !isArrayLike(obj) && _.keys(obj),\n        length = (keys || obj).length;\n    for (var index = 0; index < length; index++) {\n      var currentKey = keys ? keys[index] : index;\n      if (predicate(obj[currentKey], currentKey, obj)) return true;\n    }\n    return false;\n  };\n\n  // Determine if the array or object contains a given item (using `===`).\n  // Aliased as `includes` and `include`.\n  _.contains = _.includes = _.include = function(obj, item, fromIndex, guard) {\n    if (!isArrayLike(obj)) obj = _.values(obj);\n    if (typeof fromIndex != 'number' || guard) fromIndex = 0;\n    return _.indexOf(obj, item, fromIndex) >= 0;\n  };\n\n  // Invoke a method (with arguments) on every item in a collection.\n  _.invoke = restArguments(function(obj, path, args) {\n    var contextPath, func;\n    if (_.isFunction(path)) {\n      func = path;\n    } else if (_.isArray(path)) {\n      contextPath = path.slice(0, -1);\n      path = path[path.length - 1];\n    }\n    return _.map(obj, function(context) {\n      var method = func;\n      if (!method) {\n        if (contextPath && contextPath.length) {\n          context = deepGet(context, contextPath);\n        }\n        if (context == null) return void 0;\n        method = context[path];\n      }\n      return method == null ? method : method.apply(context, args);\n    });\n  });\n\n  // Convenience version of a common use case of `map`: fetching a property.\n  _.pluck = function(obj, key) {\n    return _.map(obj, _.property(key));\n  };\n\n  // Convenience version of a common use case of `filter`: selecting only objects\n  // containing specific `key:value` pairs.\n  _.where = function(obj, attrs) {\n    return _.filter(obj, _.matcher(attrs));\n  };\n\n  // Convenience version of a common use case of `find`: getting the first object\n  // containing specific `key:value` pairs.\n  _.findWhere = function(obj, attrs) {\n    return _.find(obj, _.matcher(attrs));\n  };\n\n  // Return the maximum element (or element-based computation).\n  _.max = function(obj, iteratee, context) {\n    var result = -Infinity, lastComputed = -Infinity,\n        value, computed;\n    if (iteratee == null || typeof iteratee == 'number' && typeof obj[0] != 'object' && obj != null) {\n      obj = isArrayLike(obj) ? obj : _.values(obj);\n      for (var i = 0, length = obj.length; i < length; i++) {\n        value = obj[i];\n        if (value != null && value > result) {\n          result = value;\n        }\n      }\n    } else {\n      iteratee = cb(iteratee, context);\n      _.each(obj, function(v, index, list) {\n        computed = iteratee(v, index, list);\n        if (computed > lastComputed || computed === -Infinity && result === -Infinity) {\n          result = v;\n          lastComputed = computed;\n        }\n      });\n    }\n    return result;\n  };\n\n  // Return the minimum element (or element-based computation).\n  _.min = function(obj, iteratee, context) {\n    var result = Infinity, lastComputed = Infinity,\n        value, computed;\n    if (iteratee == null || typeof iteratee == 'number' && typeof obj[0] != 'object' && obj != null) {\n      obj = isArrayLike(obj) ? obj : _.values(obj);\n      for (var i = 0, length = obj.length; i < length; i++) {\n        value = obj[i];\n        if (value != null && value < result) {\n          result = value;\n        }\n      }\n    } else {\n      iteratee = cb(iteratee, context);\n      _.each(obj, function(v, index, list) {\n        computed = iteratee(v, index, list);\n        if (computed < lastComputed || computed === Infinity && result === Infinity) {\n          result = v;\n          lastComputed = computed;\n        }\n      });\n    }\n    return result;\n  };\n\n  // Shuffle a collection.\n  _.shuffle = function(obj) {\n    return _.sample(obj, Infinity);\n  };\n\n  // Sample **n** random values from a collection using the modern version of the\n  // [Fisher-Yates shuffle](http://en.wikipedia.org/wiki/Fisher–Yates_shuffle).\n  // If **n** is not specified, returns a single random element.\n  // The internal `guard` argument allows it to work with `map`.\n  _.sample = function(obj, n, guard) {\n    if (n == null || guard) {\n      if (!isArrayLike(obj)) obj = _.values(obj);\n      return obj[_.random(obj.length - 1)];\n    }\n    var sample = isArrayLike(obj) ? _.clone(obj) : _.values(obj);\n    var length = getLength(sample);\n    n = Math.max(Math.min(n, length), 0);\n    var last = length - 1;\n    for (var index = 0; index < n; index++) {\n      var rand = _.random(index, last);\n      var temp = sample[index];\n      sample[index] = sample[rand];\n      sample[rand] = temp;\n    }\n    return sample.slice(0, n);\n  };\n\n  // Sort the object's values by a criterion produced by an iteratee.\n  _.sortBy = function(obj, iteratee, context) {\n    var index = 0;\n    iteratee = cb(iteratee, context);\n    return _.pluck(_.map(obj, function(value, key, list) {\n      return {\n        value: value,\n        index: index++,\n        criteria: iteratee(value, key, list)\n      };\n    }).sort(function(left, right) {\n      var a = left.criteria;\n      var b = right.criteria;\n      if (a !== b) {\n        if (a > b || a === void 0) return 1;\n        if (a < b || b === void 0) return -1;\n      }\n      return left.index - right.index;\n    }), 'value');\n  };\n\n  // An internal function used for aggregate \"group by\" operations.\n  var group = function(behavior, partition) {\n    return function(obj, iteratee, context) {\n      var result = partition ? [[], []] : {};\n      iteratee = cb(iteratee, context);\n      _.each(obj, function(value, index) {\n        var key = iteratee(value, index, obj);\n        behavior(result, value, key);\n      });\n      return result;\n    };\n  };\n\n  // Groups the object's values by a criterion. Pass either a string attribute\n  // to group by, or a function that returns the criterion.\n  _.groupBy = group(function(result, value, key) {\n    if (has(result, key)) result[key].push(value); else result[key] = [value];\n  });\n\n  // Indexes the object's values by a criterion, similar to `groupBy`, but for\n  // when you know that your index values will be unique.\n  _.indexBy = group(function(result, value, key) {\n    result[key] = value;\n  });\n\n  // Counts instances of an object that group by a certain criterion. Pass\n  // either a string attribute to count by, or a function that returns the\n  // criterion.\n  _.countBy = group(function(result, value, key) {\n    if (has(result, key)) result[key]++; else result[key] = 1;\n  });\n\n  var reStrSymbol = /[^\\ud800-\\udfff]|[\\ud800-\\udbff][\\udc00-\\udfff]|[\\ud800-\\udfff]/g;\n  // Safely create a real, live array from anything iterable.\n  _.toArray = function(obj) {\n    if (!obj) return [];\n    if (_.isArray(obj)) return slice.call(obj);\n    if (_.isString(obj)) {\n      // Keep surrogate pair characters together\n      return obj.match(reStrSymbol);\n    }\n    if (isArrayLike(obj)) return _.map(obj, _.identity);\n    return _.values(obj);\n  };\n\n  // Return the number of elements in an object.\n  _.size = function(obj) {\n    if (obj == null) return 0;\n    return isArrayLike(obj) ? obj.length : _.keys(obj).length;\n  };\n\n  // Split a collection into two arrays: one whose elements all satisfy the given\n  // predicate, and one whose elements all do not satisfy the predicate.\n  _.partition = group(function(result, value, pass) {\n    result[pass ? 0 : 1].push(value);\n  }, true);\n\n  // Array Functions\n  // ---------------\n\n  // Get the first element of an array. Passing **n** will return the first N\n  // values in the array. Aliased as `head` and `take`. The **guard** check\n  // allows it to work with `_.map`.\n  _.first = _.head = _.take = function(array, n, guard) {\n    if (array == null || array.length < 1) return n == null ? void 0 : [];\n    if (n == null || guard) return array[0];\n    return _.initial(array, array.length - n);\n  };\n\n  // Returns everything but the last entry of the array. Especially useful on\n  // the arguments object. Passing **n** will return all the values in\n  // the array, excluding the last N.\n  _.initial = function(array, n, guard) {\n    return slice.call(array, 0, Math.max(0, array.length - (n == null || guard ? 1 : n)));\n  };\n\n  // Get the last element of an array. Passing **n** will return the last N\n  // values in the array.\n  _.last = function(array, n, guard) {\n    if (array == null || array.length < 1) return n == null ? void 0 : [];\n    if (n == null || guard) return array[array.length - 1];\n    return _.rest(array, Math.max(0, array.length - n));\n  };\n\n  // Returns everything but the first entry of the array. Aliased as `tail` and `drop`.\n  // Especially useful on the arguments object. Passing an **n** will return\n  // the rest N values in the array.\n  _.rest = _.tail = _.drop = function(array, n, guard) {\n    return slice.call(array, n == null || guard ? 1 : n);\n  };\n\n  // Trim out all falsy values from an array.\n  _.compact = function(array) {\n    return _.filter(array, Boolean);\n  };\n\n  // Internal implementation of a recursive `flatten` function.\n  var flatten = function(input, shallow, strict, output) {\n    output = output || [];\n    var idx = output.length;\n    for (var i = 0, length = getLength(input); i < length; i++) {\n      var value = input[i];\n      if (isArrayLike(value) && (_.isArray(value) || _.isArguments(value))) {\n        // Flatten current level of array or arguments object.\n        if (shallow) {\n          var j = 0, len = value.length;\n          while (j < len) output[idx++] = value[j++];\n        } else {\n          flatten(value, shallow, strict, output);\n          idx = output.length;\n        }\n      } else if (!strict) {\n        output[idx++] = value;\n      }\n    }\n    return output;\n  };\n\n  // Flatten out an array, either recursively (by default), or just one level.\n  _.flatten = function(array, shallow) {\n    return flatten(array, shallow, false);\n  };\n\n  // Return a version of the array that does not contain the specified value(s).\n  _.without = restArguments(function(array, otherArrays) {\n    return _.difference(array, otherArrays);\n  });\n\n  // Produce a duplicate-free version of the array. If the array has already\n  // been sorted, you have the option of using a faster algorithm.\n  // The faster algorithm will not work with an iteratee if the iteratee\n  // is not a one-to-one function, so providing an iteratee will disable\n  // the faster algorithm.\n  // Aliased as `unique`.\n  _.uniq = _.unique = function(array, isSorted, iteratee, context) {\n    if (!_.isBoolean(isSorted)) {\n      context = iteratee;\n      iteratee = isSorted;\n      isSorted = false;\n    }\n    if (iteratee != null) iteratee = cb(iteratee, context);\n    var result = [];\n    var seen = [];\n    for (var i = 0, length = getLength(array); i < length; i++) {\n      var value = array[i],\n          computed = iteratee ? iteratee(value, i, array) : value;\n      if (isSorted && !iteratee) {\n        if (!i || seen !== computed) result.push(value);\n        seen = computed;\n      } else if (iteratee) {\n        if (!_.contains(seen, computed)) {\n          seen.push(computed);\n          result.push(value);\n        }\n      } else if (!_.contains(result, value)) {\n        result.push(value);\n      }\n    }\n    return result;\n  };\n\n  // Produce an array that contains the union: each distinct element from all of\n  // the passed-in arrays.\n  _.union = restArguments(function(arrays) {\n    return _.uniq(flatten(arrays, true, true));\n  });\n\n  // Produce an array that contains every item shared between all the\n  // passed-in arrays.\n  _.intersection = function(array) {\n    var result = [];\n    var argsLength = arguments.length;\n    for (var i = 0, length = getLength(array); i < length; i++) {\n      var item = array[i];\n      if (_.contains(result, item)) continue;\n      var j;\n      for (j = 1; j < argsLength; j++) {\n        if (!_.contains(arguments[j], item)) break;\n      }\n      if (j === argsLength) result.push(item);\n    }\n    return result;\n  };\n\n  // Take the difference between one array and a number of other arrays.\n  // Only the elements present in just the first array will remain.\n  _.difference = restArguments(function(array, rest) {\n    rest = flatten(rest, true, true);\n    return _.filter(array, function(value){\n      return !_.contains(rest, value);\n    });\n  });\n\n  // Complement of _.zip. Unzip accepts an array of arrays and groups\n  // each array's elements on shared indices.\n  _.unzip = function(array) {\n    var length = array && _.max(array, getLength).length || 0;\n    var result = Array(length);\n\n    for (var index = 0; index < length; index++) {\n      result[index] = _.pluck(array, index);\n    }\n    return result;\n  };\n\n  // Zip together multiple lists into a single array -- elements that share\n  // an index go together.\n  _.zip = restArguments(_.unzip);\n\n  // Converts lists into objects. Pass either a single array of `[key, value]`\n  // pairs, or two parallel arrays of the same length -- one of keys, and one of\n  // the corresponding values. Passing by pairs is the reverse of _.pairs.\n  _.object = function(list, values) {\n    var result = {};\n    for (var i = 0, length = getLength(list); i < length; i++) {\n      if (values) {\n        result[list[i]] = values[i];\n      } else {\n        result[list[i][0]] = list[i][1];\n      }\n    }\n    return result;\n  };\n\n  // Generator function to create the findIndex and findLastIndex functions.\n  var createPredicateIndexFinder = function(dir) {\n    return function(array, predicate, context) {\n      predicate = cb(predicate, context);\n      var length = getLength(array);\n      var index = dir > 0 ? 0 : length - 1;\n      for (; index >= 0 && index < length; index += dir) {\n        if (predicate(array[index], index, array)) return index;\n      }\n      return -1;\n    };\n  };\n\n  // Returns the first index on an array-like that passes a predicate test.\n  _.findIndex = createPredicateIndexFinder(1);\n  _.findLastIndex = createPredicateIndexFinder(-1);\n\n  // Use a comparator function to figure out the smallest index at which\n  // an object should be inserted so as to maintain order. Uses binary search.\n  _.sortedIndex = function(array, obj, iteratee, context) {\n    iteratee = cb(iteratee, context, 1);\n    var value = iteratee(obj);\n    var low = 0, high = getLength(array);\n    while (low < high) {\n      var mid = Math.floor((low + high) / 2);\n      if (iteratee(array[mid]) < value) low = mid + 1; else high = mid;\n    }\n    return low;\n  };\n\n  // Generator function to create the indexOf and lastIndexOf functions.\n  var createIndexFinder = function(dir, predicateFind, sortedIndex) {\n    return function(array, item, idx) {\n      var i = 0, length = getLength(array);\n      if (typeof idx == 'number') {\n        if (dir > 0) {\n          i = idx >= 0 ? idx : Math.max(idx + length, i);\n        } else {\n          length = idx >= 0 ? Math.min(idx + 1, length) : idx + length + 1;\n        }\n      } else if (sortedIndex && idx && length) {\n        idx = sortedIndex(array, item);\n        return array[idx] === item ? idx : -1;\n      }\n      if (item !== item) {\n        idx = predicateFind(slice.call(array, i, length), _.isNaN);\n        return idx >= 0 ? idx + i : -1;\n      }\n      for (idx = dir > 0 ? i : length - 1; idx >= 0 && idx < length; idx += dir) {\n        if (array[idx] === item) return idx;\n      }\n      return -1;\n    };\n  };\n\n  // Return the position of the first occurrence of an item in an array,\n  // or -1 if the item is not included in the array.\n  // If the array is large and already in sort order, pass `true`\n  // for **isSorted** to use binary search.\n  _.indexOf = createIndexFinder(1, _.findIndex, _.sortedIndex);\n  _.lastIndexOf = createIndexFinder(-1, _.findLastIndex);\n\n  // Generate an integer Array containing an arithmetic progression. A port of\n  // the native Python `range()` function. See\n  // [the Python documentation](http://docs.python.org/library/functions.html#range).\n  _.range = function(start, stop, step) {\n    if (stop == null) {\n      stop = start || 0;\n      start = 0;\n    }\n    if (!step) {\n      step = stop < start ? -1 : 1;\n    }\n\n    var length = Math.max(Math.ceil((stop - start) / step), 0);\n    var range = Array(length);\n\n    for (var idx = 0; idx < length; idx++, start += step) {\n      range[idx] = start;\n    }\n\n    return range;\n  };\n\n  // Chunk a single array into multiple arrays, each containing `count` or fewer\n  // items.\n  _.chunk = function(array, count) {\n    if (count == null || count < 1) return [];\n    var result = [];\n    var i = 0, length = array.length;\n    while (i < length) {\n      result.push(slice.call(array, i, i += count));\n    }\n    return result;\n  };\n\n  // Function (ahem) Functions\n  // ------------------\n\n  // Determines whether to execute a function as a constructor\n  // or a normal function with the provided arguments.\n  var executeBound = function(sourceFunc, boundFunc, context, callingContext, args) {\n    if (!(callingContext instanceof boundFunc)) return sourceFunc.apply(context, args);\n    var self = baseCreate(sourceFunc.prototype);\n    var result = sourceFunc.apply(self, args);\n    if (_.isObject(result)) return result;\n    return self;\n  };\n\n  // Create a function bound to a given object (assigning `this`, and arguments,\n  // optionally). Delegates to **ECMAScript 5**'s native `Function.bind` if\n  // available.\n  _.bind = restArguments(function(func, context, args) {\n    if (!_.isFunction(func)) throw new TypeError('Bind must be called on a function');\n    var bound = restArguments(function(callArgs) {\n      return executeBound(func, bound, context, this, args.concat(callArgs));\n    });\n    return bound;\n  });\n\n  // Partially apply a function by creating a version that has had some of its\n  // arguments pre-filled, without changing its dynamic `this` context. _ acts\n  // as a placeholder by default, allowing any combination of arguments to be\n  // pre-filled. Set `_.partial.placeholder` for a custom placeholder argument.\n  _.partial = restArguments(function(func, boundArgs) {\n    var placeholder = _.partial.placeholder;\n    var bound = function() {\n      var position = 0, length = boundArgs.length;\n      var args = Array(length);\n      for (var i = 0; i < length; i++) {\n        args[i] = boundArgs[i] === placeholder ? arguments[position++] : boundArgs[i];\n      }\n      while (position < arguments.length) args.push(arguments[position++]);\n      return executeBound(func, bound, this, this, args);\n    };\n    return bound;\n  });\n\n  _.partial.placeholder = _;\n\n  // Bind a number of an object's methods to that object. Remaining arguments\n  // are the method names to be bound. Useful for ensuring that all callbacks\n  // defined on an object belong to it.\n  _.bindAll = restArguments(function(obj, keys) {\n    keys = flatten(keys, false, false);\n    var index = keys.length;\n    if (index < 1) throw new Error('bindAll must be passed function names');\n    while (index--) {\n      var key = keys[index];\n      obj[key] = _.bind(obj[key], obj);\n    }\n  });\n\n  // Memoize an expensive function by storing its results.\n  _.memoize = function(func, hasher) {\n    var memoize = function(key) {\n      var cache = memoize.cache;\n      var address = '' + (hasher ? hasher.apply(this, arguments) : key);\n      if (!has(cache, address)) cache[address] = func.apply(this, arguments);\n      return cache[address];\n    };\n    memoize.cache = {};\n    return memoize;\n  };\n\n  // Delays a function for the given number of milliseconds, and then calls\n  // it with the arguments supplied.\n  _.delay = restArguments(function(func, wait, args) {\n    return setTimeout(function() {\n      return func.apply(null, args);\n    }, wait);\n  });\n\n  // Defers a function, scheduling it to run after the current call stack has\n  // cleared.\n  _.defer = _.partial(_.delay, _, 1);\n\n  // Returns a function, that, when invoked, will only be triggered at most once\n  // during a given window of time. Normally, the throttled function will run\n  // as much as it can, without ever going more than once per `wait` duration;\n  // but if you'd like to disable the execution on the leading edge, pass\n  // `{leading: false}`. To disable execution on the trailing edge, ditto.\n  _.throttle = function(func, wait, options) {\n    var timeout, context, args, result;\n    var previous = 0;\n    if (!options) options = {};\n\n    var later = function() {\n      previous = options.leading === false ? 0 : _.now();\n      timeout = null;\n      result = func.apply(context, args);\n      if (!timeout) context = args = null;\n    };\n\n    var throttled = function() {\n      var now = _.now();\n      if (!previous && options.leading === false) previous = now;\n      var remaining = wait - (now - previous);\n      context = this;\n      args = arguments;\n      if (remaining <= 0 || remaining > wait) {\n        if (timeout) {\n          clearTimeout(timeout);\n          timeout = null;\n        }\n        previous = now;\n        result = func.apply(context, args);\n        if (!timeout) context = args = null;\n      } else if (!timeout && options.trailing !== false) {\n        timeout = setTimeout(later, remaining);\n      }\n      return result;\n    };\n\n    throttled.cancel = function() {\n      clearTimeout(timeout);\n      previous = 0;\n      timeout = context = args = null;\n    };\n\n    return throttled;\n  };\n\n  // Returns a function, that, as long as it continues to be invoked, will not\n  // be triggered. The function will be called after it stops being called for\n  // N milliseconds. If `immediate` is passed, trigger the function on the\n  // leading edge, instead of the trailing.\n  _.debounce = function(func, wait, immediate) {\n    var timeout, result;\n\n    var later = function(context, args) {\n      timeout = null;\n      if (args) result = func.apply(context, args);\n    };\n\n    var debounced = restArguments(function(args) {\n      if (timeout) clearTimeout(timeout);\n      if (immediate) {\n        var callNow = !timeout;\n        timeout = setTimeout(later, wait);\n        if (callNow) result = func.apply(this, args);\n      } else {\n        timeout = _.delay(later, wait, this, args);\n      }\n\n      return result;\n    });\n\n    debounced.cancel = function() {\n      clearTimeout(timeout);\n      timeout = null;\n    };\n\n    return debounced;\n  };\n\n  // Returns the first function passed as an argument to the second,\n  // allowing you to adjust arguments, run code before and after, and\n  // conditionally execute the original function.\n  _.wrap = function(func, wrapper) {\n    return _.partial(wrapper, func);\n  };\n\n  // Returns a negated version of the passed-in predicate.\n  _.negate = function(predicate) {\n    return function() {\n      return !predicate.apply(this, arguments);\n    };\n  };\n\n  // Returns a function that is the composition of a list of functions, each\n  // consuming the return value of the function that follows.\n  _.compose = function() {\n    var args = arguments;\n    var start = args.length - 1;\n    return function() {\n      var i = start;\n      var result = args[start].apply(this, arguments);\n      while (i--) result = args[i].call(this, result);\n      return result;\n    };\n  };\n\n  // Returns a function that will only be executed on and after the Nth call.\n  _.after = function(times, func) {\n    return function() {\n      if (--times < 1) {\n        return func.apply(this, arguments);\n      }\n    };\n  };\n\n  // Returns a function that will only be executed up to (but not including) the Nth call.\n  _.before = function(times, func) {\n    var memo;\n    return function() {\n      if (--times > 0) {\n        memo = func.apply(this, arguments);\n      }\n      if (times <= 1) func = null;\n      return memo;\n    };\n  };\n\n  // Returns a function that will be executed at most one time, no matter how\n  // often you call it. Useful for lazy initialization.\n  _.once = _.partial(_.before, 2);\n\n  _.restArguments = restArguments;\n\n  // Object Functions\n  // ----------------\n\n  // Keys in IE < 9 that won't be iterated by `for key in ...` and thus missed.\n  var hasEnumBug = !{toString: null}.propertyIsEnumerable('toString');\n  var nonEnumerableProps = ['valueOf', 'isPrototypeOf', 'toString',\n    'propertyIsEnumerable', 'hasOwnProperty', 'toLocaleString'];\n\n  var collectNonEnumProps = function(obj, keys) {\n    var nonEnumIdx = nonEnumerableProps.length;\n    var constructor = obj.constructor;\n    var proto = _.isFunction(constructor) && constructor.prototype || ObjProto;\n\n    // Constructor is a special case.\n    var prop = 'constructor';\n    if (has(obj, prop) && !_.contains(keys, prop)) keys.push(prop);\n\n    while (nonEnumIdx--) {\n      prop = nonEnumerableProps[nonEnumIdx];\n      if (prop in obj && obj[prop] !== proto[prop] && !_.contains(keys, prop)) {\n        keys.push(prop);\n      }\n    }\n  };\n\n  // Retrieve the names of an object's own properties.\n  // Delegates to **ECMAScript 5**'s native `Object.keys`.\n  _.keys = function(obj) {\n    if (!_.isObject(obj)) return [];\n    if (nativeKeys) return nativeKeys(obj);\n    var keys = [];\n    for (var key in obj) if (has(obj, key)) keys.push(key);\n    // Ahem, IE < 9.\n    if (hasEnumBug) collectNonEnumProps(obj, keys);\n    return keys;\n  };\n\n  // Retrieve all the property names of an object.\n  _.allKeys = function(obj) {\n    if (!_.isObject(obj)) return [];\n    var keys = [];\n    for (var key in obj) keys.push(key);\n    // Ahem, IE < 9.\n    if (hasEnumBug) collectNonEnumProps(obj, keys);\n    return keys;\n  };\n\n  // Retrieve the values of an object's properties.\n  _.values = function(obj) {\n    var keys = _.keys(obj);\n    var length = keys.length;\n    var values = Array(length);\n    for (var i = 0; i < length; i++) {\n      values[i] = obj[keys[i]];\n    }\n    return values;\n  };\n\n  // Returns the results of applying the iteratee to each element of the object.\n  // In contrast to _.map it returns an object.\n  _.mapObject = function(obj, iteratee, context) {\n    iteratee = cb(iteratee, context);\n    var keys = _.keys(obj),\n        length = keys.length,\n        results = {};\n    for (var index = 0; index < length; index++) {\n      var currentKey = keys[index];\n      results[currentKey] = iteratee(obj[currentKey], currentKey, obj);\n    }\n    return results;\n  };\n\n  // Convert an object into a list of `[key, value]` pairs.\n  // The opposite of _.object.\n  _.pairs = function(obj) {\n    var keys = _.keys(obj);\n    var length = keys.length;\n    var pairs = Array(length);\n    for (var i = 0; i < length; i++) {\n      pairs[i] = [keys[i], obj[keys[i]]];\n    }\n    return pairs;\n  };\n\n  // Invert the keys and values of an object. The values must be serializable.\n  _.invert = function(obj) {\n    var result = {};\n    var keys = _.keys(obj);\n    for (var i = 0, length = keys.length; i < length; i++) {\n      result[obj[keys[i]]] = keys[i];\n    }\n    return result;\n  };\n\n  // Return a sorted list of the function names available on the object.\n  // Aliased as `methods`.\n  _.functions = _.methods = function(obj) {\n    var names = [];\n    for (var key in obj) {\n      if (_.isFunction(obj[key])) names.push(key);\n    }\n    return names.sort();\n  };\n\n  // An internal function for creating assigner functions.\n  var createAssigner = function(keysFunc, defaults) {\n    return function(obj) {\n      var length = arguments.length;\n      if (defaults) obj = Object(obj);\n      if (length < 2 || obj == null) return obj;\n      for (var index = 1; index < length; index++) {\n        var source = arguments[index],\n            keys = keysFunc(source),\n            l = keys.length;\n        for (var i = 0; i < l; i++) {\n          var key = keys[i];\n          if (!defaults || obj[key] === void 0) obj[key] = source[key];\n        }\n      }\n      return obj;\n    };\n  };\n\n  // Extend a given object with all the properties in passed-in object(s).\n  _.extend = createAssigner(_.allKeys);\n\n  // Assigns a given object with all the own properties in the passed-in object(s).\n  // (https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/assign)\n  _.extendOwn = _.assign = createAssigner(_.keys);\n\n  // Returns the first key on an object that passes a predicate test.\n  _.findKey = function(obj, predicate, context) {\n    predicate = cb(predicate, context);\n    var keys = _.keys(obj), key;\n    for (var i = 0, length = keys.length; i < length; i++) {\n      key = keys[i];\n      if (predicate(obj[key], key, obj)) return key;\n    }\n  };\n\n  // Internal pick helper function to determine if `obj` has key `key`.\n  var keyInObj = function(value, key, obj) {\n    return key in obj;\n  };\n\n  // Return a copy of the object only containing the whitelisted properties.\n  _.pick = restArguments(function(obj, keys) {\n    var result = {}, iteratee = keys[0];\n    if (obj == null) return result;\n    if (_.isFunction(iteratee)) {\n      if (keys.length > 1) iteratee = optimizeCb(iteratee, keys[1]);\n      keys = _.allKeys(obj);\n    } else {\n      iteratee = keyInObj;\n      keys = flatten(keys, false, false);\n      obj = Object(obj);\n    }\n    for (var i = 0, length = keys.length; i < length; i++) {\n      var key = keys[i];\n      var value = obj[key];\n      if (iteratee(value, key, obj)) result[key] = value;\n    }\n    return result;\n  });\n\n  // Return a copy of the object without the blacklisted properties.\n  _.omit = restArguments(function(obj, keys) {\n    var iteratee = keys[0], context;\n    if (_.isFunction(iteratee)) {\n      iteratee = _.negate(iteratee);\n      if (keys.length > 1) context = keys[1];\n    } else {\n      keys = _.map(flatten(keys, false, false), String);\n      iteratee = function(value, key) {\n        return !_.contains(keys, key);\n      };\n    }\n    return _.pick(obj, iteratee, context);\n  });\n\n  // Fill in a given object with default properties.\n  _.defaults = createAssigner(_.allKeys, true);\n\n  // Creates an object that inherits from the given prototype object.\n  // If additional properties are provided then they will be added to the\n  // created object.\n  _.create = function(prototype, props) {\n    var result = baseCreate(prototype);\n    if (props) _.extendOwn(result, props);\n    return result;\n  };\n\n  // Create a (shallow-cloned) duplicate of an object.\n  _.clone = function(obj) {\n    if (!_.isObject(obj)) return obj;\n    return _.isArray(obj) ? obj.slice() : _.extend({}, obj);\n  };\n\n  // Invokes interceptor with the obj, and then returns obj.\n  // The primary purpose of this method is to \"tap into\" a method chain, in\n  // order to perform operations on intermediate results within the chain.\n  _.tap = function(obj, interceptor) {\n    interceptor(obj);\n    return obj;\n  };\n\n  // Returns whether an object has a given set of `key:value` pairs.\n  _.isMatch = function(object, attrs) {\n    var keys = _.keys(attrs), length = keys.length;\n    if (object == null) return !length;\n    var obj = Object(object);\n    for (var i = 0; i < length; i++) {\n      var key = keys[i];\n      if (attrs[key] !== obj[key] || !(key in obj)) return false;\n    }\n    return true;\n  };\n\n\n  // Internal recursive comparison function for `isEqual`.\n  var eq, deepEq;\n  eq = function(a, b, aStack, bStack) {\n    // Identical objects are equal. `0 === -0`, but they aren't identical.\n    // See the [Harmony `egal` proposal](http://wiki.ecmascript.org/doku.php?id=harmony:egal).\n    if (a === b) return a !== 0 || 1 / a === 1 / b;\n    // `null` or `undefined` only equal to itself (strict comparison).\n    if (a == null || b == null) return false;\n    // `NaN`s are equivalent, but non-reflexive.\n    if (a !== a) return b !== b;\n    // Exhaust primitive checks\n    var type = typeof a;\n    if (type !== 'function' && type !== 'object' && typeof b != 'object') return false;\n    return deepEq(a, b, aStack, bStack);\n  };\n\n  // Internal recursive comparison function for `isEqual`.\n  deepEq = function(a, b, aStack, bStack) {\n    // Unwrap any wrapped objects.\n    if (a instanceof _) a = a._wrapped;\n    if (b instanceof _) b = b._wrapped;\n    // Compare `[[Class]]` names.\n    var className = toString.call(a);\n    if (className !== toString.call(b)) return false;\n    switch (className) {\n      // Strings, numbers, regular expressions, dates, and booleans are compared by value.\n      case '[object RegExp]':\n      // RegExps are coerced to strings for comparison (Note: '' + /a/i === '/a/i')\n      case '[object String]':\n        // Primitives and their corresponding object wrappers are equivalent; thus, `\"5\"` is\n        // equivalent to `new String(\"5\")`.\n        return '' + a === '' + b;\n      case '[object Number]':\n        // `NaN`s are equivalent, but non-reflexive.\n        // Object(NaN) is equivalent to NaN.\n        if (+a !== +a) return +b !== +b;\n        // An `egal` comparison is performed for other numeric values.\n        return +a === 0 ? 1 / +a === 1 / b : +a === +b;\n      case '[object Date]':\n      case '[object Boolean]':\n        // Coerce dates and booleans to numeric primitive values. Dates are compared by their\n        // millisecond representations. Note that invalid dates with millisecond representations\n        // of `NaN` are not equivalent.\n        return +a === +b;\n      case '[object Symbol]':\n        return SymbolProto.valueOf.call(a) === SymbolProto.valueOf.call(b);\n    }\n\n    var areArrays = className === '[object Array]';\n    if (!areArrays) {\n      if (typeof a != 'object' || typeof b != 'object') return false;\n\n      // Objects with different constructors are not equivalent, but `Object`s or `Array`s\n      // from different frames are.\n      var aCtor = a.constructor, bCtor = b.constructor;\n      if (aCtor !== bCtor && !(_.isFunction(aCtor) && aCtor instanceof aCtor &&\n                               _.isFunction(bCtor) && bCtor instanceof bCtor)\n                          && ('constructor' in a && 'constructor' in b)) {\n        return false;\n      }\n    }\n    // Assume equality for cyclic structures. The algorithm for detecting cyclic\n    // structures is adapted from ES 5.1 section 15.12.3, abstract operation `JO`.\n\n    // Initializing stack of traversed objects.\n    // It's done here since we only need them for objects and arrays comparison.\n    aStack = aStack || [];\n    bStack = bStack || [];\n    var length = aStack.length;\n    while (length--) {\n      // Linear search. Performance is inversely proportional to the number of\n      // unique nested structures.\n      if (aStack[length] === a) return bStack[length] === b;\n    }\n\n    // Add the first object to the stack of traversed objects.\n    aStack.push(a);\n    bStack.push(b);\n\n    // Recursively compare objects and arrays.\n    if (areArrays) {\n      // Compare array lengths to determine if a deep comparison is necessary.\n      length = a.length;\n      if (length !== b.length) return false;\n      // Deep compare the contents, ignoring non-numeric properties.\n      while (length--) {\n        if (!eq(a[length], b[length], aStack, bStack)) return false;\n      }\n    } else {\n      // Deep compare objects.\n      var keys = _.keys(a), key;\n      length = keys.length;\n      // Ensure that both objects contain the same number of properties before comparing deep equality.\n      if (_.keys(b).length !== length) return false;\n      while (length--) {\n        // Deep compare each member\n        key = keys[length];\n        if (!(has(b, key) && eq(a[key], b[key], aStack, bStack))) return false;\n      }\n    }\n    // Remove the first object from the stack of traversed objects.\n    aStack.pop();\n    bStack.pop();\n    return true;\n  };\n\n  // Perform a deep comparison to check if two objects are equal.\n  _.isEqual = function(a, b) {\n    return eq(a, b);\n  };\n\n  // Is a given array, string, or object empty?\n  // An \"empty\" object has no enumerable own-properties.\n  _.isEmpty = function(obj) {\n    if (obj == null) return true;\n    if (isArrayLike(obj) && (_.isArray(obj) || _.isString(obj) || _.isArguments(obj))) return obj.length === 0;\n    return _.keys(obj).length === 0;\n  };\n\n  // Is a given value a DOM element?\n  _.isElement = function(obj) {\n    return !!(obj && obj.nodeType === 1);\n  };\n\n  // Is a given value an array?\n  // Delegates to ECMA5's native Array.isArray\n  _.isArray = nativeIsArray || function(obj) {\n    return toString.call(obj) === '[object Array]';\n  };\n\n  // Is a given variable an object?\n  _.isObject = function(obj) {\n    var type = typeof obj;\n    return type === 'function' || type === 'object' && !!obj;\n  };\n\n  // Add some isType methods: isArguments, isFunction, isString, isNumber, isDate, isRegExp, isError, isMap, isWeakMap, isSet, isWeakSet.\n  _.each(['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp', 'Error', 'Symbol', 'Map', 'WeakMap', 'Set', 'WeakSet'], function(name) {\n    _['is' + name] = function(obj) {\n      return toString.call(obj) === '[object ' + name + ']';\n    };\n  });\n\n  // Define a fallback version of the method in browsers (ahem, IE < 9), where\n  // there isn't any inspectable \"Arguments\" type.\n  if (!_.isArguments(arguments)) {\n    _.isArguments = function(obj) {\n      return has(obj, 'callee');\n    };\n  }\n\n  // Optimize `isFunction` if appropriate. Work around some typeof bugs in old v8,\n  // IE 11 (#1621), Safari 8 (#1929), and PhantomJS (#2236).\n  var nodelist = root.document && root.document.childNodes;\n  if (typeof /./ != 'function' && typeof Int8Array != 'object' && typeof nodelist != 'function') {\n    _.isFunction = function(obj) {\n      return typeof obj == 'function' || false;\n    };\n  }\n\n  // Is a given object a finite number?\n  _.isFinite = function(obj) {\n    return !_.isSymbol(obj) && isFinite(obj) && !isNaN(parseFloat(obj));\n  };\n\n  // Is the given value `NaN`?\n  _.isNaN = function(obj) {\n    return _.isNumber(obj) && isNaN(obj);\n  };\n\n  // Is a given value a boolean?\n  _.isBoolean = function(obj) {\n    return obj === true || obj === false || toString.call(obj) === '[object Boolean]';\n  };\n\n  // Is a given value equal to null?\n  _.isNull = function(obj) {\n    return obj === null;\n  };\n\n  // Is a given variable undefined?\n  _.isUndefined = function(obj) {\n    return obj === void 0;\n  };\n\n  // Shortcut function for checking if an object has a given property directly\n  // on itself (in other words, not on a prototype).\n  _.has = function(obj, path) {\n    if (!_.isArray(path)) {\n      return has(obj, path);\n    }\n    var length = path.length;\n    for (var i = 0; i < length; i++) {\n      var key = path[i];\n      if (obj == null || !hasOwnProperty.call(obj, key)) {\n        return false;\n      }\n      obj = obj[key];\n    }\n    return !!length;\n  };\n\n  // Utility Functions\n  // -----------------\n\n  // Run Underscore.js in *noConflict* mode, returning the `_` variable to its\n  // previous owner. Returns a reference to the Underscore object.\n  _.noConflict = function() {\n    root._ = previousUnderscore;\n    return this;\n  };\n\n  // Keep the identity function around for default iteratees.\n  _.identity = function(value) {\n    return value;\n  };\n\n  // Predicate-generating functions. Often useful outside of Underscore.\n  _.constant = function(value) {\n    return function() {\n      return value;\n    };\n  };\n\n  _.noop = function(){};\n\n  // Creates a function that, when passed an object, will traverse that object’s\n  // properties down the given `path`, specified as an array of keys or indexes.\n  _.property = function(path) {\n    if (!_.isArray(path)) {\n      return shallowProperty(path);\n    }\n    return function(obj) {\n      return deepGet(obj, path);\n    };\n  };\n\n  // Generates a function for a given object that returns a given property.\n  _.propertyOf = function(obj) {\n    if (obj == null) {\n      return function(){};\n    }\n    return function(path) {\n      return !_.isArray(path) ? obj[path] : deepGet(obj, path);\n    };\n  };\n\n  // Returns a predicate for checking whether an object has a given set of\n  // `key:value` pairs.\n  _.matcher = _.matches = function(attrs) {\n    attrs = _.extendOwn({}, attrs);\n    return function(obj) {\n      return _.isMatch(obj, attrs);\n    };\n  };\n\n  // Run a function **n** times.\n  _.times = function(n, iteratee, context) {\n    var accum = Array(Math.max(0, n));\n    iteratee = optimizeCb(iteratee, context, 1);\n    for (var i = 0; i < n; i++) accum[i] = iteratee(i);\n    return accum;\n  };\n\n  // Return a random integer between min and max (inclusive).\n  _.random = function(min, max) {\n    if (max == null) {\n      max = min;\n      min = 0;\n    }\n    return min + Math.floor(Math.random() * (max - min + 1));\n  };\n\n  // A (possibly faster) way to get the current timestamp as an integer.\n  _.now = Date.now || function() {\n    return new Date().getTime();\n  };\n\n  // List of HTML entities for escaping.\n  var escapeMap = {\n    '&': '&amp;',\n    '<': '&lt;',\n    '>': '&gt;',\n    '\"': '&quot;',\n    \"'\": '&#x27;',\n    '`': '&#x60;'\n  };\n  var unescapeMap = _.invert(escapeMap);\n\n  // Functions for escaping and unescaping strings to/from HTML interpolation.\n  var createEscaper = function(map) {\n    var escaper = function(match) {\n      return map[match];\n    };\n    // Regexes for identifying a key that needs to be escaped.\n    var source = '(?:' + _.keys(map).join('|') + ')';\n    var testRegexp = RegExp(source);\n    var replaceRegexp = RegExp(source, 'g');\n    return function(string) {\n      string = string == null ? '' : '' + string;\n      return testRegexp.test(string) ? string.replace(replaceRegexp, escaper) : string;\n    };\n  };\n  _.escape = createEscaper(escapeMap);\n  _.unescape = createEscaper(unescapeMap);\n\n  // Traverses the children of `obj` along `path`. If a child is a function, it\n  // is invoked with its parent as context. Returns the value of the final\n  // child, or `fallback` if any child is undefined.\n  _.result = function(obj, path, fallback) {\n    if (!_.isArray(path)) path = [path];\n    var length = path.length;\n    if (!length) {\n      return _.isFunction(fallback) ? fallback.call(obj) : fallback;\n    }\n    for (var i = 0; i < length; i++) {\n      var prop = obj == null ? void 0 : obj[path[i]];\n      if (prop === void 0) {\n        prop = fallback;\n        i = length; // Ensure we don't continue iterating.\n      }\n      obj = _.isFunction(prop) ? prop.call(obj) : prop;\n    }\n    return obj;\n  };\n\n  // Generate a unique integer id (unique within the entire client session).\n  // Useful for temporary DOM ids.\n  var idCounter = 0;\n  _.uniqueId = function(prefix) {\n    var id = ++idCounter + '';\n    return prefix ? prefix + id : id;\n  };\n\n  // By default, Underscore uses ERB-style template delimiters, change the\n  // following template settings to use alternative delimiters.\n  _.templateSettings = {\n    evaluate: /<%([\\s\\S]+?)%>/g,\n    interpolate: /<%=([\\s\\S]+?)%>/g,\n    escape: /<%-([\\s\\S]+?)%>/g\n  };\n\n  // When customizing `templateSettings`, if you don't want to define an\n  // interpolation, evaluation or escaping regex, we need one that is\n  // guaranteed not to match.\n  var noMatch = /(.)^/;\n\n  // Certain characters need to be escaped so that they can be put into a\n  // string literal.\n  var escapes = {\n    \"'\": \"'\",\n    '\\\\': '\\\\',\n    '\\r': 'r',\n    '\\n': 'n',\n    '\\u2028': 'u2028',\n    '\\u2029': 'u2029'\n  };\n\n  var escapeRegExp = /\\\\|'|\\r|\\n|\\u2028|\\u2029/g;\n\n  var escapeChar = function(match) {\n    return '\\\\' + escapes[match];\n  };\n\n  // JavaScript micro-templating, similar to John Resig's implementation.\n  // Underscore templating handles arbitrary delimiters, preserves whitespace,\n  // and correctly escapes quotes within interpolated code.\n  // NB: `oldSettings` only exists for backwards compatibility.\n  _.template = function(text, settings, oldSettings) {\n    if (!settings && oldSettings) settings = oldSettings;\n    settings = _.defaults({}, settings, _.templateSettings);\n\n    // Combine delimiters into one regular expression via alternation.\n    var matcher = RegExp([\n      (settings.escape || noMatch).source,\n      (settings.interpolate || noMatch).source,\n      (settings.evaluate || noMatch).source\n    ].join('|') + '|$', 'g');\n\n    // Compile the template source, escaping string literals appropriately.\n    var index = 0;\n    var source = \"__p+='\";\n    text.replace(matcher, function(match, escape, interpolate, evaluate, offset) {\n      source += text.slice(index, offset).replace(escapeRegExp, escapeChar);\n      index = offset + match.length;\n\n      if (escape) {\n        source += \"'+\\n((__t=(\" + escape + \"))==null?'':_.escape(__t))+\\n'\";\n      } else if (interpolate) {\n        source += \"'+\\n((__t=(\" + interpolate + \"))==null?'':__t)+\\n'\";\n      } else if (evaluate) {\n        source += \"';\\n\" + evaluate + \"\\n__p+='\";\n      }\n\n      // Adobe VMs need the match returned to produce the correct offset.\n      return match;\n    });\n    source += \"';\\n\";\n\n    // If a variable is not specified, place data values in local scope.\n    if (!settings.variable) source = 'with(obj||{}){\\n' + source + '}\\n';\n\n    source = \"var __t,__p='',__j=Array.prototype.join,\" +\n      \"print=function(){__p+=__j.call(arguments,'');};\\n\" +\n      source + 'return __p;\\n';\n\n    var render;\n    try {\n      render = new Function(settings.variable || 'obj', '_', source);\n    } catch (e) {\n      e.source = source;\n      throw e;\n    }\n\n    var template = function(data) {\n      return render.call(this, data, _);\n    };\n\n    // Provide the compiled source as a convenience for precompilation.\n    var argument = settings.variable || 'obj';\n    template.source = 'function(' + argument + '){\\n' + source + '}';\n\n    return template;\n  };\n\n  // Add a \"chain\" function. Start chaining a wrapped Underscore object.\n  _.chain = function(obj) {\n    var instance = _(obj);\n    instance._chain = true;\n    return instance;\n  };\n\n  // OOP\n  // ---------------\n  // If Underscore is called as a function, it returns a wrapped object that\n  // can be used OO-style. This wrapper holds altered versions of all the\n  // underscore functions. Wrapped objects may be chained.\n\n  // Helper function to continue chaining intermediate results.\n  var chainResult = function(instance, obj) {\n    return instance._chain ? _(obj).chain() : obj;\n  };\n\n  // Add your own custom functions to the Underscore object.\n  _.mixin = function(obj) {\n    _.each(_.functions(obj), function(name) {\n      var func = _[name] = obj[name];\n      _.prototype[name] = function() {\n        var args = [this._wrapped];\n        push.apply(args, arguments);\n        return chainResult(this, func.apply(_, args));\n      };\n    });\n    return _;\n  };\n\n  // Add all of the Underscore functions to the wrapper object.\n  _.mixin(_);\n\n  // Add all mutator Array functions to the wrapper.\n  _.each(['pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'], function(name) {\n    var method = ArrayProto[name];\n    _.prototype[name] = function() {\n      var obj = this._wrapped;\n      method.apply(obj, arguments);\n      if ((name === 'shift' || name === 'splice') && obj.length === 0) delete obj[0];\n      return chainResult(this, obj);\n    };\n  });\n\n  // Add all accessor Array functions to the wrapper.\n  _.each(['concat', 'join', 'slice'], function(name) {\n    var method = ArrayProto[name];\n    _.prototype[name] = function() {\n      return chainResult(this, method.apply(this._wrapped, arguments));\n    };\n  });\n\n  // Extracts the result from a wrapped and chained object.\n  _.prototype.value = function() {\n    return this._wrapped;\n  };\n\n  // Provide unwrapping proxy for some methods used in engine operations\n  // such as arithmetic and JSON stringification.\n  _.prototype.valueOf = _.prototype.toJSON = _.prototype.value;\n\n  _.prototype.toString = function() {\n    return String(this._wrapped);\n  };\n\n  // AMD registration happens at the end for compatibility with AMD loaders\n  // that may not enforce next-turn semantics on modules. Even though general\n  // practice for AMD registration is to be anonymous, underscore registers\n  // as a named module because, like jQuery, it is a base library that is\n  // popular enough to be bundled in a third party lib, but not be part of\n  // an AMD load request. Those cases could generate an error when an\n  // anonymous define() is called outside of a loader request.\n  if (true) {\n    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = (function() {\n      return _;\n    }).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),\n\t\t\t\t__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));\n  }\n}());\n\n/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../../.nvm/versions/node/v9.8.0/lib/node_modules/webpack/buildin/module.js */ \"../../.nvm/versions/node/v9.8.0/lib/node_modules/webpack/buildin/module.js\")(module)))\n\n//# sourceURL=webpack:///./node_modules/underscore/underscore.js?");
+/* WEBPACK VAR INJECTION */(function(module) {var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     Underscore.js 1.9.1
+//     http://underscorejs.org
+//     (c) 2009-2018 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+//     Underscore may be freely distributed under the MIT license.
+
+(function() {
+
+  // Baseline setup
+  // --------------
+
+  // Establish the root object, `window` (`self`) in the browser, `global`
+  // on the server, or `this` in some virtual machines. We use `self`
+  // instead of `window` for `WebWorker` support.
+  var root = typeof self == 'object' && self.self === self && self ||
+            typeof global == 'object' && global.global === global && global ||
+            this ||
+            {};
+
+  // Save the previous value of the `_` variable.
+  var previousUnderscore = root._;
+
+  // Save bytes in the minified (but not gzipped) version:
+  var ArrayProto = Array.prototype, ObjProto = Object.prototype;
+  var SymbolProto = typeof Symbol !== 'undefined' ? Symbol.prototype : null;
+
+  // Create quick reference variables for speed access to core prototypes.
+  var push = ArrayProto.push,
+      slice = ArrayProto.slice,
+      toString = ObjProto.toString,
+      hasOwnProperty = ObjProto.hasOwnProperty;
+
+  // All **ECMAScript 5** native function implementations that we hope to use
+  // are declared here.
+  var nativeIsArray = Array.isArray,
+      nativeKeys = Object.keys,
+      nativeCreate = Object.create;
+
+  // Naked function reference for surrogate-prototype-swapping.
+  var Ctor = function(){};
+
+  // Create a safe reference to the Underscore object for use below.
+  var _ = function(obj) {
+    if (obj instanceof _) return obj;
+    if (!(this instanceof _)) return new _(obj);
+    this._wrapped = obj;
+  };
+
+  // Export the Underscore object for **Node.js**, with
+  // backwards-compatibility for their old module API. If we're in
+  // the browser, add `_` as a global object.
+  // (`nodeType` is checked to ensure that `module`
+  // and `exports` are not HTML elements.)
+  if (typeof exports != 'undefined' && !exports.nodeType) {
+    if (typeof module != 'undefined' && !module.nodeType && module.exports) {
+      exports = module.exports = _;
+    }
+    exports._ = _;
+  } else {
+    root._ = _;
+  }
+
+  // Current version.
+  _.VERSION = '1.9.1';
+
+  // Internal function that returns an efficient (for current engines) version
+  // of the passed-in callback, to be repeatedly applied in other Underscore
+  // functions.
+  var optimizeCb = function(func, context, argCount) {
+    if (context === void 0) return func;
+    switch (argCount == null ? 3 : argCount) {
+      case 1: return function(value) {
+        return func.call(context, value);
+      };
+      // The 2-argument case is omitted because we’re not using it.
+      case 3: return function(value, index, collection) {
+        return func.call(context, value, index, collection);
+      };
+      case 4: return function(accumulator, value, index, collection) {
+        return func.call(context, accumulator, value, index, collection);
+      };
+    }
+    return function() {
+      return func.apply(context, arguments);
+    };
+  };
+
+  var builtinIteratee;
+
+  // An internal function to generate callbacks that can be applied to each
+  // element in a collection, returning the desired result — either `identity`,
+  // an arbitrary callback, a property matcher, or a property accessor.
+  var cb = function(value, context, argCount) {
+    if (_.iteratee !== builtinIteratee) return _.iteratee(value, context);
+    if (value == null) return _.identity;
+    if (_.isFunction(value)) return optimizeCb(value, context, argCount);
+    if (_.isObject(value) && !_.isArray(value)) return _.matcher(value);
+    return _.property(value);
+  };
+
+  // External wrapper for our callback generator. Users may customize
+  // `_.iteratee` if they want additional predicate/iteratee shorthand styles.
+  // This abstraction hides the internal-only argCount argument.
+  _.iteratee = builtinIteratee = function(value, context) {
+    return cb(value, context, Infinity);
+  };
+
+  // Some functions take a variable number of arguments, or a few expected
+  // arguments at the beginning and then a variable number of values to operate
+  // on. This helper accumulates all remaining arguments past the function’s
+  // argument length (or an explicit `startIndex`), into an array that becomes
+  // the last argument. Similar to ES6’s "rest parameter".
+  var restArguments = function(func, startIndex) {
+    startIndex = startIndex == null ? func.length - 1 : +startIndex;
+    return function() {
+      var length = Math.max(arguments.length - startIndex, 0),
+          rest = Array(length),
+          index = 0;
+      for (; index < length; index++) {
+        rest[index] = arguments[index + startIndex];
+      }
+      switch (startIndex) {
+        case 0: return func.call(this, rest);
+        case 1: return func.call(this, arguments[0], rest);
+        case 2: return func.call(this, arguments[0], arguments[1], rest);
+      }
+      var args = Array(startIndex + 1);
+      for (index = 0; index < startIndex; index++) {
+        args[index] = arguments[index];
+      }
+      args[startIndex] = rest;
+      return func.apply(this, args);
+    };
+  };
+
+  // An internal function for creating a new object that inherits from another.
+  var baseCreate = function(prototype) {
+    if (!_.isObject(prototype)) return {};
+    if (nativeCreate) return nativeCreate(prototype);
+    Ctor.prototype = prototype;
+    var result = new Ctor;
+    Ctor.prototype = null;
+    return result;
+  };
+
+  var shallowProperty = function(key) {
+    return function(obj) {
+      return obj == null ? void 0 : obj[key];
+    };
+  };
+
+  var has = function(obj, path) {
+    return obj != null && hasOwnProperty.call(obj, path);
+  }
+
+  var deepGet = function(obj, path) {
+    var length = path.length;
+    for (var i = 0; i < length; i++) {
+      if (obj == null) return void 0;
+      obj = obj[path[i]];
+    }
+    return length ? obj : void 0;
+  };
+
+  // Helper for collection methods to determine whether a collection
+  // should be iterated as an array or as an object.
+  // Related: http://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength
+  // Avoids a very nasty iOS 8 JIT bug on ARM-64. #2094
+  var MAX_ARRAY_INDEX = Math.pow(2, 53) - 1;
+  var getLength = shallowProperty('length');
+  var isArrayLike = function(collection) {
+    var length = getLength(collection);
+    return typeof length == 'number' && length >= 0 && length <= MAX_ARRAY_INDEX;
+  };
+
+  // Collection Functions
+  // --------------------
+
+  // The cornerstone, an `each` implementation, aka `forEach`.
+  // Handles raw objects in addition to array-likes. Treats all
+  // sparse array-likes as if they were dense.
+  _.each = _.forEach = function(obj, iteratee, context) {
+    iteratee = optimizeCb(iteratee, context);
+    var i, length;
+    if (isArrayLike(obj)) {
+      for (i = 0, length = obj.length; i < length; i++) {
+        iteratee(obj[i], i, obj);
+      }
+    } else {
+      var keys = _.keys(obj);
+      for (i = 0, length = keys.length; i < length; i++) {
+        iteratee(obj[keys[i]], keys[i], obj);
+      }
+    }
+    return obj;
+  };
+
+  // Return the results of applying the iteratee to each element.
+  _.map = _.collect = function(obj, iteratee, context) {
+    iteratee = cb(iteratee, context);
+    var keys = !isArrayLike(obj) && _.keys(obj),
+        length = (keys || obj).length,
+        results = Array(length);
+    for (var index = 0; index < length; index++) {
+      var currentKey = keys ? keys[index] : index;
+      results[index] = iteratee(obj[currentKey], currentKey, obj);
+    }
+    return results;
+  };
+
+  // Create a reducing function iterating left or right.
+  var createReduce = function(dir) {
+    // Wrap code that reassigns argument variables in a separate function than
+    // the one that accesses `arguments.length` to avoid a perf hit. (#1991)
+    var reducer = function(obj, iteratee, memo, initial) {
+      var keys = !isArrayLike(obj) && _.keys(obj),
+          length = (keys || obj).length,
+          index = dir > 0 ? 0 : length - 1;
+      if (!initial) {
+        memo = obj[keys ? keys[index] : index];
+        index += dir;
+      }
+      for (; index >= 0 && index < length; index += dir) {
+        var currentKey = keys ? keys[index] : index;
+        memo = iteratee(memo, obj[currentKey], currentKey, obj);
+      }
+      return memo;
+    };
+
+    return function(obj, iteratee, memo, context) {
+      var initial = arguments.length >= 3;
+      return reducer(obj, optimizeCb(iteratee, context, 4), memo, initial);
+    };
+  };
+
+  // **Reduce** builds up a single result from a list of values, aka `inject`,
+  // or `foldl`.
+  _.reduce = _.foldl = _.inject = createReduce(1);
+
+  // The right-associative version of reduce, also known as `foldr`.
+  _.reduceRight = _.foldr = createReduce(-1);
+
+  // Return the first value which passes a truth test. Aliased as `detect`.
+  _.find = _.detect = function(obj, predicate, context) {
+    var keyFinder = isArrayLike(obj) ? _.findIndex : _.findKey;
+    var key = keyFinder(obj, predicate, context);
+    if (key !== void 0 && key !== -1) return obj[key];
+  };
+
+  // Return all the elements that pass a truth test.
+  // Aliased as `select`.
+  _.filter = _.select = function(obj, predicate, context) {
+    var results = [];
+    predicate = cb(predicate, context);
+    _.each(obj, function(value, index, list) {
+      if (predicate(value, index, list)) results.push(value);
+    });
+    return results;
+  };
+
+  // Return all the elements for which a truth test fails.
+  _.reject = function(obj, predicate, context) {
+    return _.filter(obj, _.negate(cb(predicate)), context);
+  };
+
+  // Determine whether all of the elements match a truth test.
+  // Aliased as `all`.
+  _.every = _.all = function(obj, predicate, context) {
+    predicate = cb(predicate, context);
+    var keys = !isArrayLike(obj) && _.keys(obj),
+        length = (keys || obj).length;
+    for (var index = 0; index < length; index++) {
+      var currentKey = keys ? keys[index] : index;
+      if (!predicate(obj[currentKey], currentKey, obj)) return false;
+    }
+    return true;
+  };
+
+  // Determine if at least one element in the object matches a truth test.
+  // Aliased as `any`.
+  _.some = _.any = function(obj, predicate, context) {
+    predicate = cb(predicate, context);
+    var keys = !isArrayLike(obj) && _.keys(obj),
+        length = (keys || obj).length;
+    for (var index = 0; index < length; index++) {
+      var currentKey = keys ? keys[index] : index;
+      if (predicate(obj[currentKey], currentKey, obj)) return true;
+    }
+    return false;
+  };
+
+  // Determine if the array or object contains a given item (using `===`).
+  // Aliased as `includes` and `include`.
+  _.contains = _.includes = _.include = function(obj, item, fromIndex, guard) {
+    if (!isArrayLike(obj)) obj = _.values(obj);
+    if (typeof fromIndex != 'number' || guard) fromIndex = 0;
+    return _.indexOf(obj, item, fromIndex) >= 0;
+  };
+
+  // Invoke a method (with arguments) on every item in a collection.
+  _.invoke = restArguments(function(obj, path, args) {
+    var contextPath, func;
+    if (_.isFunction(path)) {
+      func = path;
+    } else if (_.isArray(path)) {
+      contextPath = path.slice(0, -1);
+      path = path[path.length - 1];
+    }
+    return _.map(obj, function(context) {
+      var method = func;
+      if (!method) {
+        if (contextPath && contextPath.length) {
+          context = deepGet(context, contextPath);
+        }
+        if (context == null) return void 0;
+        method = context[path];
+      }
+      return method == null ? method : method.apply(context, args);
+    });
+  });
+
+  // Convenience version of a common use case of `map`: fetching a property.
+  _.pluck = function(obj, key) {
+    return _.map(obj, _.property(key));
+  };
+
+  // Convenience version of a common use case of `filter`: selecting only objects
+  // containing specific `key:value` pairs.
+  _.where = function(obj, attrs) {
+    return _.filter(obj, _.matcher(attrs));
+  };
+
+  // Convenience version of a common use case of `find`: getting the first object
+  // containing specific `key:value` pairs.
+  _.findWhere = function(obj, attrs) {
+    return _.find(obj, _.matcher(attrs));
+  };
+
+  // Return the maximum element (or element-based computation).
+  _.max = function(obj, iteratee, context) {
+    var result = -Infinity, lastComputed = -Infinity,
+        value, computed;
+    if (iteratee == null || typeof iteratee == 'number' && typeof obj[0] != 'object' && obj != null) {
+      obj = isArrayLike(obj) ? obj : _.values(obj);
+      for (var i = 0, length = obj.length; i < length; i++) {
+        value = obj[i];
+        if (value != null && value > result) {
+          result = value;
+        }
+      }
+    } else {
+      iteratee = cb(iteratee, context);
+      _.each(obj, function(v, index, list) {
+        computed = iteratee(v, index, list);
+        if (computed > lastComputed || computed === -Infinity && result === -Infinity) {
+          result = v;
+          lastComputed = computed;
+        }
+      });
+    }
+    return result;
+  };
+
+  // Return the minimum element (or element-based computation).
+  _.min = function(obj, iteratee, context) {
+    var result = Infinity, lastComputed = Infinity,
+        value, computed;
+    if (iteratee == null || typeof iteratee == 'number' && typeof obj[0] != 'object' && obj != null) {
+      obj = isArrayLike(obj) ? obj : _.values(obj);
+      for (var i = 0, length = obj.length; i < length; i++) {
+        value = obj[i];
+        if (value != null && value < result) {
+          result = value;
+        }
+      }
+    } else {
+      iteratee = cb(iteratee, context);
+      _.each(obj, function(v, index, list) {
+        computed = iteratee(v, index, list);
+        if (computed < lastComputed || computed === Infinity && result === Infinity) {
+          result = v;
+          lastComputed = computed;
+        }
+      });
+    }
+    return result;
+  };
+
+  // Shuffle a collection.
+  _.shuffle = function(obj) {
+    return _.sample(obj, Infinity);
+  };
+
+  // Sample **n** random values from a collection using the modern version of the
+  // [Fisher-Yates shuffle](http://en.wikipedia.org/wiki/Fisher–Yates_shuffle).
+  // If **n** is not specified, returns a single random element.
+  // The internal `guard` argument allows it to work with `map`.
+  _.sample = function(obj, n, guard) {
+    if (n == null || guard) {
+      if (!isArrayLike(obj)) obj = _.values(obj);
+      return obj[_.random(obj.length - 1)];
+    }
+    var sample = isArrayLike(obj) ? _.clone(obj) : _.values(obj);
+    var length = getLength(sample);
+    n = Math.max(Math.min(n, length), 0);
+    var last = length - 1;
+    for (var index = 0; index < n; index++) {
+      var rand = _.random(index, last);
+      var temp = sample[index];
+      sample[index] = sample[rand];
+      sample[rand] = temp;
+    }
+    return sample.slice(0, n);
+  };
+
+  // Sort the object's values by a criterion produced by an iteratee.
+  _.sortBy = function(obj, iteratee, context) {
+    var index = 0;
+    iteratee = cb(iteratee, context);
+    return _.pluck(_.map(obj, function(value, key, list) {
+      return {
+        value: value,
+        index: index++,
+        criteria: iteratee(value, key, list)
+      };
+    }).sort(function(left, right) {
+      var a = left.criteria;
+      var b = right.criteria;
+      if (a !== b) {
+        if (a > b || a === void 0) return 1;
+        if (a < b || b === void 0) return -1;
+      }
+      return left.index - right.index;
+    }), 'value');
+  };
+
+  // An internal function used for aggregate "group by" operations.
+  var group = function(behavior, partition) {
+    return function(obj, iteratee, context) {
+      var result = partition ? [[], []] : {};
+      iteratee = cb(iteratee, context);
+      _.each(obj, function(value, index) {
+        var key = iteratee(value, index, obj);
+        behavior(result, value, key);
+      });
+      return result;
+    };
+  };
+
+  // Groups the object's values by a criterion. Pass either a string attribute
+  // to group by, or a function that returns the criterion.
+  _.groupBy = group(function(result, value, key) {
+    if (has(result, key)) result[key].push(value); else result[key] = [value];
+  });
+
+  // Indexes the object's values by a criterion, similar to `groupBy`, but for
+  // when you know that your index values will be unique.
+  _.indexBy = group(function(result, value, key) {
+    result[key] = value;
+  });
+
+  // Counts instances of an object that group by a certain criterion. Pass
+  // either a string attribute to count by, or a function that returns the
+  // criterion.
+  _.countBy = group(function(result, value, key) {
+    if (has(result, key)) result[key]++; else result[key] = 1;
+  });
+
+  var reStrSymbol = /[^\ud800-\udfff]|[\ud800-\udbff][\udc00-\udfff]|[\ud800-\udfff]/g;
+  // Safely create a real, live array from anything iterable.
+  _.toArray = function(obj) {
+    if (!obj) return [];
+    if (_.isArray(obj)) return slice.call(obj);
+    if (_.isString(obj)) {
+      // Keep surrogate pair characters together
+      return obj.match(reStrSymbol);
+    }
+    if (isArrayLike(obj)) return _.map(obj, _.identity);
+    return _.values(obj);
+  };
+
+  // Return the number of elements in an object.
+  _.size = function(obj) {
+    if (obj == null) return 0;
+    return isArrayLike(obj) ? obj.length : _.keys(obj).length;
+  };
+
+  // Split a collection into two arrays: one whose elements all satisfy the given
+  // predicate, and one whose elements all do not satisfy the predicate.
+  _.partition = group(function(result, value, pass) {
+    result[pass ? 0 : 1].push(value);
+  }, true);
+
+  // Array Functions
+  // ---------------
+
+  // Get the first element of an array. Passing **n** will return the first N
+  // values in the array. Aliased as `head` and `take`. The **guard** check
+  // allows it to work with `_.map`.
+  _.first = _.head = _.take = function(array, n, guard) {
+    if (array == null || array.length < 1) return n == null ? void 0 : [];
+    if (n == null || guard) return array[0];
+    return _.initial(array, array.length - n);
+  };
+
+  // Returns everything but the last entry of the array. Especially useful on
+  // the arguments object. Passing **n** will return all the values in
+  // the array, excluding the last N.
+  _.initial = function(array, n, guard) {
+    return slice.call(array, 0, Math.max(0, array.length - (n == null || guard ? 1 : n)));
+  };
+
+  // Get the last element of an array. Passing **n** will return the last N
+  // values in the array.
+  _.last = function(array, n, guard) {
+    if (array == null || array.length < 1) return n == null ? void 0 : [];
+    if (n == null || guard) return array[array.length - 1];
+    return _.rest(array, Math.max(0, array.length - n));
+  };
+
+  // Returns everything but the first entry of the array. Aliased as `tail` and `drop`.
+  // Especially useful on the arguments object. Passing an **n** will return
+  // the rest N values in the array.
+  _.rest = _.tail = _.drop = function(array, n, guard) {
+    return slice.call(array, n == null || guard ? 1 : n);
+  };
+
+  // Trim out all falsy values from an array.
+  _.compact = function(array) {
+    return _.filter(array, Boolean);
+  };
+
+  // Internal implementation of a recursive `flatten` function.
+  var flatten = function(input, shallow, strict, output) {
+    output = output || [];
+    var idx = output.length;
+    for (var i = 0, length = getLength(input); i < length; i++) {
+      var value = input[i];
+      if (isArrayLike(value) && (_.isArray(value) || _.isArguments(value))) {
+        // Flatten current level of array or arguments object.
+        if (shallow) {
+          var j = 0, len = value.length;
+          while (j < len) output[idx++] = value[j++];
+        } else {
+          flatten(value, shallow, strict, output);
+          idx = output.length;
+        }
+      } else if (!strict) {
+        output[idx++] = value;
+      }
+    }
+    return output;
+  };
+
+  // Flatten out an array, either recursively (by default), or just one level.
+  _.flatten = function(array, shallow) {
+    return flatten(array, shallow, false);
+  };
+
+  // Return a version of the array that does not contain the specified value(s).
+  _.without = restArguments(function(array, otherArrays) {
+    return _.difference(array, otherArrays);
+  });
+
+  // Produce a duplicate-free version of the array. If the array has already
+  // been sorted, you have the option of using a faster algorithm.
+  // The faster algorithm will not work with an iteratee if the iteratee
+  // is not a one-to-one function, so providing an iteratee will disable
+  // the faster algorithm.
+  // Aliased as `unique`.
+  _.uniq = _.unique = function(array, isSorted, iteratee, context) {
+    if (!_.isBoolean(isSorted)) {
+      context = iteratee;
+      iteratee = isSorted;
+      isSorted = false;
+    }
+    if (iteratee != null) iteratee = cb(iteratee, context);
+    var result = [];
+    var seen = [];
+    for (var i = 0, length = getLength(array); i < length; i++) {
+      var value = array[i],
+          computed = iteratee ? iteratee(value, i, array) : value;
+      if (isSorted && !iteratee) {
+        if (!i || seen !== computed) result.push(value);
+        seen = computed;
+      } else if (iteratee) {
+        if (!_.contains(seen, computed)) {
+          seen.push(computed);
+          result.push(value);
+        }
+      } else if (!_.contains(result, value)) {
+        result.push(value);
+      }
+    }
+    return result;
+  };
+
+  // Produce an array that contains the union: each distinct element from all of
+  // the passed-in arrays.
+  _.union = restArguments(function(arrays) {
+    return _.uniq(flatten(arrays, true, true));
+  });
+
+  // Produce an array that contains every item shared between all the
+  // passed-in arrays.
+  _.intersection = function(array) {
+    var result = [];
+    var argsLength = arguments.length;
+    for (var i = 0, length = getLength(array); i < length; i++) {
+      var item = array[i];
+      if (_.contains(result, item)) continue;
+      var j;
+      for (j = 1; j < argsLength; j++) {
+        if (!_.contains(arguments[j], item)) break;
+      }
+      if (j === argsLength) result.push(item);
+    }
+    return result;
+  };
+
+  // Take the difference between one array and a number of other arrays.
+  // Only the elements present in just the first array will remain.
+  _.difference = restArguments(function(array, rest) {
+    rest = flatten(rest, true, true);
+    return _.filter(array, function(value){
+      return !_.contains(rest, value);
+    });
+  });
+
+  // Complement of _.zip. Unzip accepts an array of arrays and groups
+  // each array's elements on shared indices.
+  _.unzip = function(array) {
+    var length = array && _.max(array, getLength).length || 0;
+    var result = Array(length);
+
+    for (var index = 0; index < length; index++) {
+      result[index] = _.pluck(array, index);
+    }
+    return result;
+  };
+
+  // Zip together multiple lists into a single array -- elements that share
+  // an index go together.
+  _.zip = restArguments(_.unzip);
+
+  // Converts lists into objects. Pass either a single array of `[key, value]`
+  // pairs, or two parallel arrays of the same length -- one of keys, and one of
+  // the corresponding values. Passing by pairs is the reverse of _.pairs.
+  _.object = function(list, values) {
+    var result = {};
+    for (var i = 0, length = getLength(list); i < length; i++) {
+      if (values) {
+        result[list[i]] = values[i];
+      } else {
+        result[list[i][0]] = list[i][1];
+      }
+    }
+    return result;
+  };
+
+  // Generator function to create the findIndex and findLastIndex functions.
+  var createPredicateIndexFinder = function(dir) {
+    return function(array, predicate, context) {
+      predicate = cb(predicate, context);
+      var length = getLength(array);
+      var index = dir > 0 ? 0 : length - 1;
+      for (; index >= 0 && index < length; index += dir) {
+        if (predicate(array[index], index, array)) return index;
+      }
+      return -1;
+    };
+  };
+
+  // Returns the first index on an array-like that passes a predicate test.
+  _.findIndex = createPredicateIndexFinder(1);
+  _.findLastIndex = createPredicateIndexFinder(-1);
+
+  // Use a comparator function to figure out the smallest index at which
+  // an object should be inserted so as to maintain order. Uses binary search.
+  _.sortedIndex = function(array, obj, iteratee, context) {
+    iteratee = cb(iteratee, context, 1);
+    var value = iteratee(obj);
+    var low = 0, high = getLength(array);
+    while (low < high) {
+      var mid = Math.floor((low + high) / 2);
+      if (iteratee(array[mid]) < value) low = mid + 1; else high = mid;
+    }
+    return low;
+  };
+
+  // Generator function to create the indexOf and lastIndexOf functions.
+  var createIndexFinder = function(dir, predicateFind, sortedIndex) {
+    return function(array, item, idx) {
+      var i = 0, length = getLength(array);
+      if (typeof idx == 'number') {
+        if (dir > 0) {
+          i = idx >= 0 ? idx : Math.max(idx + length, i);
+        } else {
+          length = idx >= 0 ? Math.min(idx + 1, length) : idx + length + 1;
+        }
+      } else if (sortedIndex && idx && length) {
+        idx = sortedIndex(array, item);
+        return array[idx] === item ? idx : -1;
+      }
+      if (item !== item) {
+        idx = predicateFind(slice.call(array, i, length), _.isNaN);
+        return idx >= 0 ? idx + i : -1;
+      }
+      for (idx = dir > 0 ? i : length - 1; idx >= 0 && idx < length; idx += dir) {
+        if (array[idx] === item) return idx;
+      }
+      return -1;
+    };
+  };
+
+  // Return the position of the first occurrence of an item in an array,
+  // or -1 if the item is not included in the array.
+  // If the array is large and already in sort order, pass `true`
+  // for **isSorted** to use binary search.
+  _.indexOf = createIndexFinder(1, _.findIndex, _.sortedIndex);
+  _.lastIndexOf = createIndexFinder(-1, _.findLastIndex);
+
+  // Generate an integer Array containing an arithmetic progression. A port of
+  // the native Python `range()` function. See
+  // [the Python documentation](http://docs.python.org/library/functions.html#range).
+  _.range = function(start, stop, step) {
+    if (stop == null) {
+      stop = start || 0;
+      start = 0;
+    }
+    if (!step) {
+      step = stop < start ? -1 : 1;
+    }
+
+    var length = Math.max(Math.ceil((stop - start) / step), 0);
+    var range = Array(length);
+
+    for (var idx = 0; idx < length; idx++, start += step) {
+      range[idx] = start;
+    }
+
+    return range;
+  };
+
+  // Chunk a single array into multiple arrays, each containing `count` or fewer
+  // items.
+  _.chunk = function(array, count) {
+    if (count == null || count < 1) return [];
+    var result = [];
+    var i = 0, length = array.length;
+    while (i < length) {
+      result.push(slice.call(array, i, i += count));
+    }
+    return result;
+  };
+
+  // Function (ahem) Functions
+  // ------------------
+
+  // Determines whether to execute a function as a constructor
+  // or a normal function with the provided arguments.
+  var executeBound = function(sourceFunc, boundFunc, context, callingContext, args) {
+    if (!(callingContext instanceof boundFunc)) return sourceFunc.apply(context, args);
+    var self = baseCreate(sourceFunc.prototype);
+    var result = sourceFunc.apply(self, args);
+    if (_.isObject(result)) return result;
+    return self;
+  };
+
+  // Create a function bound to a given object (assigning `this`, and arguments,
+  // optionally). Delegates to **ECMAScript 5**'s native `Function.bind` if
+  // available.
+  _.bind = restArguments(function(func, context, args) {
+    if (!_.isFunction(func)) throw new TypeError('Bind must be called on a function');
+    var bound = restArguments(function(callArgs) {
+      return executeBound(func, bound, context, this, args.concat(callArgs));
+    });
+    return bound;
+  });
+
+  // Partially apply a function by creating a version that has had some of its
+  // arguments pre-filled, without changing its dynamic `this` context. _ acts
+  // as a placeholder by default, allowing any combination of arguments to be
+  // pre-filled. Set `_.partial.placeholder` for a custom placeholder argument.
+  _.partial = restArguments(function(func, boundArgs) {
+    var placeholder = _.partial.placeholder;
+    var bound = function() {
+      var position = 0, length = boundArgs.length;
+      var args = Array(length);
+      for (var i = 0; i < length; i++) {
+        args[i] = boundArgs[i] === placeholder ? arguments[position++] : boundArgs[i];
+      }
+      while (position < arguments.length) args.push(arguments[position++]);
+      return executeBound(func, bound, this, this, args);
+    };
+    return bound;
+  });
+
+  _.partial.placeholder = _;
+
+  // Bind a number of an object's methods to that object. Remaining arguments
+  // are the method names to be bound. Useful for ensuring that all callbacks
+  // defined on an object belong to it.
+  _.bindAll = restArguments(function(obj, keys) {
+    keys = flatten(keys, false, false);
+    var index = keys.length;
+    if (index < 1) throw new Error('bindAll must be passed function names');
+    while (index--) {
+      var key = keys[index];
+      obj[key] = _.bind(obj[key], obj);
+    }
+  });
+
+  // Memoize an expensive function by storing its results.
+  _.memoize = function(func, hasher) {
+    var memoize = function(key) {
+      var cache = memoize.cache;
+      var address = '' + (hasher ? hasher.apply(this, arguments) : key);
+      if (!has(cache, address)) cache[address] = func.apply(this, arguments);
+      return cache[address];
+    };
+    memoize.cache = {};
+    return memoize;
+  };
+
+  // Delays a function for the given number of milliseconds, and then calls
+  // it with the arguments supplied.
+  _.delay = restArguments(function(func, wait, args) {
+    return setTimeout(function() {
+      return func.apply(null, args);
+    }, wait);
+  });
+
+  // Defers a function, scheduling it to run after the current call stack has
+  // cleared.
+  _.defer = _.partial(_.delay, _, 1);
+
+  // Returns a function, that, when invoked, will only be triggered at most once
+  // during a given window of time. Normally, the throttled function will run
+  // as much as it can, without ever going more than once per `wait` duration;
+  // but if you'd like to disable the execution on the leading edge, pass
+  // `{leading: false}`. To disable execution on the trailing edge, ditto.
+  _.throttle = function(func, wait, options) {
+    var timeout, context, args, result;
+    var previous = 0;
+    if (!options) options = {};
+
+    var later = function() {
+      previous = options.leading === false ? 0 : _.now();
+      timeout = null;
+      result = func.apply(context, args);
+      if (!timeout) context = args = null;
+    };
+
+    var throttled = function() {
+      var now = _.now();
+      if (!previous && options.leading === false) previous = now;
+      var remaining = wait - (now - previous);
+      context = this;
+      args = arguments;
+      if (remaining <= 0 || remaining > wait) {
+        if (timeout) {
+          clearTimeout(timeout);
+          timeout = null;
+        }
+        previous = now;
+        result = func.apply(context, args);
+        if (!timeout) context = args = null;
+      } else if (!timeout && options.trailing !== false) {
+        timeout = setTimeout(later, remaining);
+      }
+      return result;
+    };
+
+    throttled.cancel = function() {
+      clearTimeout(timeout);
+      previous = 0;
+      timeout = context = args = null;
+    };
+
+    return throttled;
+  };
+
+  // Returns a function, that, as long as it continues to be invoked, will not
+  // be triggered. The function will be called after it stops being called for
+  // N milliseconds. If `immediate` is passed, trigger the function on the
+  // leading edge, instead of the trailing.
+  _.debounce = function(func, wait, immediate) {
+    var timeout, result;
+
+    var later = function(context, args) {
+      timeout = null;
+      if (args) result = func.apply(context, args);
+    };
+
+    var debounced = restArguments(function(args) {
+      if (timeout) clearTimeout(timeout);
+      if (immediate) {
+        var callNow = !timeout;
+        timeout = setTimeout(later, wait);
+        if (callNow) result = func.apply(this, args);
+      } else {
+        timeout = _.delay(later, wait, this, args);
+      }
+
+      return result;
+    });
+
+    debounced.cancel = function() {
+      clearTimeout(timeout);
+      timeout = null;
+    };
+
+    return debounced;
+  };
+
+  // Returns the first function passed as an argument to the second,
+  // allowing you to adjust arguments, run code before and after, and
+  // conditionally execute the original function.
+  _.wrap = function(func, wrapper) {
+    return _.partial(wrapper, func);
+  };
+
+  // Returns a negated version of the passed-in predicate.
+  _.negate = function(predicate) {
+    return function() {
+      return !predicate.apply(this, arguments);
+    };
+  };
+
+  // Returns a function that is the composition of a list of functions, each
+  // consuming the return value of the function that follows.
+  _.compose = function() {
+    var args = arguments;
+    var start = args.length - 1;
+    return function() {
+      var i = start;
+      var result = args[start].apply(this, arguments);
+      while (i--) result = args[i].call(this, result);
+      return result;
+    };
+  };
+
+  // Returns a function that will only be executed on and after the Nth call.
+  _.after = function(times, func) {
+    return function() {
+      if (--times < 1) {
+        return func.apply(this, arguments);
+      }
+    };
+  };
+
+  // Returns a function that will only be executed up to (but not including) the Nth call.
+  _.before = function(times, func) {
+    var memo;
+    return function() {
+      if (--times > 0) {
+        memo = func.apply(this, arguments);
+      }
+      if (times <= 1) func = null;
+      return memo;
+    };
+  };
+
+  // Returns a function that will be executed at most one time, no matter how
+  // often you call it. Useful for lazy initialization.
+  _.once = _.partial(_.before, 2);
+
+  _.restArguments = restArguments;
+
+  // Object Functions
+  // ----------------
+
+  // Keys in IE < 9 that won't be iterated by `for key in ...` and thus missed.
+  var hasEnumBug = !{toString: null}.propertyIsEnumerable('toString');
+  var nonEnumerableProps = ['valueOf', 'isPrototypeOf', 'toString',
+    'propertyIsEnumerable', 'hasOwnProperty', 'toLocaleString'];
+
+  var collectNonEnumProps = function(obj, keys) {
+    var nonEnumIdx = nonEnumerableProps.length;
+    var constructor = obj.constructor;
+    var proto = _.isFunction(constructor) && constructor.prototype || ObjProto;
+
+    // Constructor is a special case.
+    var prop = 'constructor';
+    if (has(obj, prop) && !_.contains(keys, prop)) keys.push(prop);
+
+    while (nonEnumIdx--) {
+      prop = nonEnumerableProps[nonEnumIdx];
+      if (prop in obj && obj[prop] !== proto[prop] && !_.contains(keys, prop)) {
+        keys.push(prop);
+      }
+    }
+  };
+
+  // Retrieve the names of an object's own properties.
+  // Delegates to **ECMAScript 5**'s native `Object.keys`.
+  _.keys = function(obj) {
+    if (!_.isObject(obj)) return [];
+    if (nativeKeys) return nativeKeys(obj);
+    var keys = [];
+    for (var key in obj) if (has(obj, key)) keys.push(key);
+    // Ahem, IE < 9.
+    if (hasEnumBug) collectNonEnumProps(obj, keys);
+    return keys;
+  };
+
+  // Retrieve all the property names of an object.
+  _.allKeys = function(obj) {
+    if (!_.isObject(obj)) return [];
+    var keys = [];
+    for (var key in obj) keys.push(key);
+    // Ahem, IE < 9.
+    if (hasEnumBug) collectNonEnumProps(obj, keys);
+    return keys;
+  };
+
+  // Retrieve the values of an object's properties.
+  _.values = function(obj) {
+    var keys = _.keys(obj);
+    var length = keys.length;
+    var values = Array(length);
+    for (var i = 0; i < length; i++) {
+      values[i] = obj[keys[i]];
+    }
+    return values;
+  };
+
+  // Returns the results of applying the iteratee to each element of the object.
+  // In contrast to _.map it returns an object.
+  _.mapObject = function(obj, iteratee, context) {
+    iteratee = cb(iteratee, context);
+    var keys = _.keys(obj),
+        length = keys.length,
+        results = {};
+    for (var index = 0; index < length; index++) {
+      var currentKey = keys[index];
+      results[currentKey] = iteratee(obj[currentKey], currentKey, obj);
+    }
+    return results;
+  };
+
+  // Convert an object into a list of `[key, value]` pairs.
+  // The opposite of _.object.
+  _.pairs = function(obj) {
+    var keys = _.keys(obj);
+    var length = keys.length;
+    var pairs = Array(length);
+    for (var i = 0; i < length; i++) {
+      pairs[i] = [keys[i], obj[keys[i]]];
+    }
+    return pairs;
+  };
+
+  // Invert the keys and values of an object. The values must be serializable.
+  _.invert = function(obj) {
+    var result = {};
+    var keys = _.keys(obj);
+    for (var i = 0, length = keys.length; i < length; i++) {
+      result[obj[keys[i]]] = keys[i];
+    }
+    return result;
+  };
+
+  // Return a sorted list of the function names available on the object.
+  // Aliased as `methods`.
+  _.functions = _.methods = function(obj) {
+    var names = [];
+    for (var key in obj) {
+      if (_.isFunction(obj[key])) names.push(key);
+    }
+    return names.sort();
+  };
+
+  // An internal function for creating assigner functions.
+  var createAssigner = function(keysFunc, defaults) {
+    return function(obj) {
+      var length = arguments.length;
+      if (defaults) obj = Object(obj);
+      if (length < 2 || obj == null) return obj;
+      for (var index = 1; index < length; index++) {
+        var source = arguments[index],
+            keys = keysFunc(source),
+            l = keys.length;
+        for (var i = 0; i < l; i++) {
+          var key = keys[i];
+          if (!defaults || obj[key] === void 0) obj[key] = source[key];
+        }
+      }
+      return obj;
+    };
+  };
+
+  // Extend a given object with all the properties in passed-in object(s).
+  _.extend = createAssigner(_.allKeys);
+
+  // Assigns a given object with all the own properties in the passed-in object(s).
+  // (https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/assign)
+  _.extendOwn = _.assign = createAssigner(_.keys);
+
+  // Returns the first key on an object that passes a predicate test.
+  _.findKey = function(obj, predicate, context) {
+    predicate = cb(predicate, context);
+    var keys = _.keys(obj), key;
+    for (var i = 0, length = keys.length; i < length; i++) {
+      key = keys[i];
+      if (predicate(obj[key], key, obj)) return key;
+    }
+  };
+
+  // Internal pick helper function to determine if `obj` has key `key`.
+  var keyInObj = function(value, key, obj) {
+    return key in obj;
+  };
+
+  // Return a copy of the object only containing the whitelisted properties.
+  _.pick = restArguments(function(obj, keys) {
+    var result = {}, iteratee = keys[0];
+    if (obj == null) return result;
+    if (_.isFunction(iteratee)) {
+      if (keys.length > 1) iteratee = optimizeCb(iteratee, keys[1]);
+      keys = _.allKeys(obj);
+    } else {
+      iteratee = keyInObj;
+      keys = flatten(keys, false, false);
+      obj = Object(obj);
+    }
+    for (var i = 0, length = keys.length; i < length; i++) {
+      var key = keys[i];
+      var value = obj[key];
+      if (iteratee(value, key, obj)) result[key] = value;
+    }
+    return result;
+  });
+
+  // Return a copy of the object without the blacklisted properties.
+  _.omit = restArguments(function(obj, keys) {
+    var iteratee = keys[0], context;
+    if (_.isFunction(iteratee)) {
+      iteratee = _.negate(iteratee);
+      if (keys.length > 1) context = keys[1];
+    } else {
+      keys = _.map(flatten(keys, false, false), String);
+      iteratee = function(value, key) {
+        return !_.contains(keys, key);
+      };
+    }
+    return _.pick(obj, iteratee, context);
+  });
+
+  // Fill in a given object with default properties.
+  _.defaults = createAssigner(_.allKeys, true);
+
+  // Creates an object that inherits from the given prototype object.
+  // If additional properties are provided then they will be added to the
+  // created object.
+  _.create = function(prototype, props) {
+    var result = baseCreate(prototype);
+    if (props) _.extendOwn(result, props);
+    return result;
+  };
+
+  // Create a (shallow-cloned) duplicate of an object.
+  _.clone = function(obj) {
+    if (!_.isObject(obj)) return obj;
+    return _.isArray(obj) ? obj.slice() : _.extend({}, obj);
+  };
+
+  // Invokes interceptor with the obj, and then returns obj.
+  // The primary purpose of this method is to "tap into" a method chain, in
+  // order to perform operations on intermediate results within the chain.
+  _.tap = function(obj, interceptor) {
+    interceptor(obj);
+    return obj;
+  };
+
+  // Returns whether an object has a given set of `key:value` pairs.
+  _.isMatch = function(object, attrs) {
+    var keys = _.keys(attrs), length = keys.length;
+    if (object == null) return !length;
+    var obj = Object(object);
+    for (var i = 0; i < length; i++) {
+      var key = keys[i];
+      if (attrs[key] !== obj[key] || !(key in obj)) return false;
+    }
+    return true;
+  };
+
+
+  // Internal recursive comparison function for `isEqual`.
+  var eq, deepEq;
+  eq = function(a, b, aStack, bStack) {
+    // Identical objects are equal. `0 === -0`, but they aren't identical.
+    // See the [Harmony `egal` proposal](http://wiki.ecmascript.org/doku.php?id=harmony:egal).
+    if (a === b) return a !== 0 || 1 / a === 1 / b;
+    // `null` or `undefined` only equal to itself (strict comparison).
+    if (a == null || b == null) return false;
+    // `NaN`s are equivalent, but non-reflexive.
+    if (a !== a) return b !== b;
+    // Exhaust primitive checks
+    var type = typeof a;
+    if (type !== 'function' && type !== 'object' && typeof b != 'object') return false;
+    return deepEq(a, b, aStack, bStack);
+  };
+
+  // Internal recursive comparison function for `isEqual`.
+  deepEq = function(a, b, aStack, bStack) {
+    // Unwrap any wrapped objects.
+    if (a instanceof _) a = a._wrapped;
+    if (b instanceof _) b = b._wrapped;
+    // Compare `[[Class]]` names.
+    var className = toString.call(a);
+    if (className !== toString.call(b)) return false;
+    switch (className) {
+      // Strings, numbers, regular expressions, dates, and booleans are compared by value.
+      case '[object RegExp]':
+      // RegExps are coerced to strings for comparison (Note: '' + /a/i === '/a/i')
+      case '[object String]':
+        // Primitives and their corresponding object wrappers are equivalent; thus, `"5"` is
+        // equivalent to `new String("5")`.
+        return '' + a === '' + b;
+      case '[object Number]':
+        // `NaN`s are equivalent, but non-reflexive.
+        // Object(NaN) is equivalent to NaN.
+        if (+a !== +a) return +b !== +b;
+        // An `egal` comparison is performed for other numeric values.
+        return +a === 0 ? 1 / +a === 1 / b : +a === +b;
+      case '[object Date]':
+      case '[object Boolean]':
+        // Coerce dates and booleans to numeric primitive values. Dates are compared by their
+        // millisecond representations. Note that invalid dates with millisecond representations
+        // of `NaN` are not equivalent.
+        return +a === +b;
+      case '[object Symbol]':
+        return SymbolProto.valueOf.call(a) === SymbolProto.valueOf.call(b);
+    }
+
+    var areArrays = className === '[object Array]';
+    if (!areArrays) {
+      if (typeof a != 'object' || typeof b != 'object') return false;
+
+      // Objects with different constructors are not equivalent, but `Object`s or `Array`s
+      // from different frames are.
+      var aCtor = a.constructor, bCtor = b.constructor;
+      if (aCtor !== bCtor && !(_.isFunction(aCtor) && aCtor instanceof aCtor &&
+                               _.isFunction(bCtor) && bCtor instanceof bCtor)
+                          && ('constructor' in a && 'constructor' in b)) {
+        return false;
+      }
+    }
+    // Assume equality for cyclic structures. The algorithm for detecting cyclic
+    // structures is adapted from ES 5.1 section 15.12.3, abstract operation `JO`.
+
+    // Initializing stack of traversed objects.
+    // It's done here since we only need them for objects and arrays comparison.
+    aStack = aStack || [];
+    bStack = bStack || [];
+    var length = aStack.length;
+    while (length--) {
+      // Linear search. Performance is inversely proportional to the number of
+      // unique nested structures.
+      if (aStack[length] === a) return bStack[length] === b;
+    }
+
+    // Add the first object to the stack of traversed objects.
+    aStack.push(a);
+    bStack.push(b);
+
+    // Recursively compare objects and arrays.
+    if (areArrays) {
+      // Compare array lengths to determine if a deep comparison is necessary.
+      length = a.length;
+      if (length !== b.length) return false;
+      // Deep compare the contents, ignoring non-numeric properties.
+      while (length--) {
+        if (!eq(a[length], b[length], aStack, bStack)) return false;
+      }
+    } else {
+      // Deep compare objects.
+      var keys = _.keys(a), key;
+      length = keys.length;
+      // Ensure that both objects contain the same number of properties before comparing deep equality.
+      if (_.keys(b).length !== length) return false;
+      while (length--) {
+        // Deep compare each member
+        key = keys[length];
+        if (!(has(b, key) && eq(a[key], b[key], aStack, bStack))) return false;
+      }
+    }
+    // Remove the first object from the stack of traversed objects.
+    aStack.pop();
+    bStack.pop();
+    return true;
+  };
+
+  // Perform a deep comparison to check if two objects are equal.
+  _.isEqual = function(a, b) {
+    return eq(a, b);
+  };
+
+  // Is a given array, string, or object empty?
+  // An "empty" object has no enumerable own-properties.
+  _.isEmpty = function(obj) {
+    if (obj == null) return true;
+    if (isArrayLike(obj) && (_.isArray(obj) || _.isString(obj) || _.isArguments(obj))) return obj.length === 0;
+    return _.keys(obj).length === 0;
+  };
+
+  // Is a given value a DOM element?
+  _.isElement = function(obj) {
+    return !!(obj && obj.nodeType === 1);
+  };
+
+  // Is a given value an array?
+  // Delegates to ECMA5's native Array.isArray
+  _.isArray = nativeIsArray || function(obj) {
+    return toString.call(obj) === '[object Array]';
+  };
+
+  // Is a given variable an object?
+  _.isObject = function(obj) {
+    var type = typeof obj;
+    return type === 'function' || type === 'object' && !!obj;
+  };
+
+  // Add some isType methods: isArguments, isFunction, isString, isNumber, isDate, isRegExp, isError, isMap, isWeakMap, isSet, isWeakSet.
+  _.each(['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp', 'Error', 'Symbol', 'Map', 'WeakMap', 'Set', 'WeakSet'], function(name) {
+    _['is' + name] = function(obj) {
+      return toString.call(obj) === '[object ' + name + ']';
+    };
+  });
+
+  // Define a fallback version of the method in browsers (ahem, IE < 9), where
+  // there isn't any inspectable "Arguments" type.
+  if (!_.isArguments(arguments)) {
+    _.isArguments = function(obj) {
+      return has(obj, 'callee');
+    };
+  }
+
+  // Optimize `isFunction` if appropriate. Work around some typeof bugs in old v8,
+  // IE 11 (#1621), Safari 8 (#1929), and PhantomJS (#2236).
+  var nodelist = root.document && root.document.childNodes;
+  if (typeof /./ != 'function' && typeof Int8Array != 'object' && typeof nodelist != 'function') {
+    _.isFunction = function(obj) {
+      return typeof obj == 'function' || false;
+    };
+  }
+
+  // Is a given object a finite number?
+  _.isFinite = function(obj) {
+    return !_.isSymbol(obj) && isFinite(obj) && !isNaN(parseFloat(obj));
+  };
+
+  // Is the given value `NaN`?
+  _.isNaN = function(obj) {
+    return _.isNumber(obj) && isNaN(obj);
+  };
+
+  // Is a given value a boolean?
+  _.isBoolean = function(obj) {
+    return obj === true || obj === false || toString.call(obj) === '[object Boolean]';
+  };
+
+  // Is a given value equal to null?
+  _.isNull = function(obj) {
+    return obj === null;
+  };
+
+  // Is a given variable undefined?
+  _.isUndefined = function(obj) {
+    return obj === void 0;
+  };
+
+  // Shortcut function for checking if an object has a given property directly
+  // on itself (in other words, not on a prototype).
+  _.has = function(obj, path) {
+    if (!_.isArray(path)) {
+      return has(obj, path);
+    }
+    var length = path.length;
+    for (var i = 0; i < length; i++) {
+      var key = path[i];
+      if (obj == null || !hasOwnProperty.call(obj, key)) {
+        return false;
+      }
+      obj = obj[key];
+    }
+    return !!length;
+  };
+
+  // Utility Functions
+  // -----------------
+
+  // Run Underscore.js in *noConflict* mode, returning the `_` variable to its
+  // previous owner. Returns a reference to the Underscore object.
+  _.noConflict = function() {
+    root._ = previousUnderscore;
+    return this;
+  };
+
+  // Keep the identity function around for default iteratees.
+  _.identity = function(value) {
+    return value;
+  };
+
+  // Predicate-generating functions. Often useful outside of Underscore.
+  _.constant = function(value) {
+    return function() {
+      return value;
+    };
+  };
+
+  _.noop = function(){};
+
+  // Creates a function that, when passed an object, will traverse that object’s
+  // properties down the given `path`, specified as an array of keys or indexes.
+  _.property = function(path) {
+    if (!_.isArray(path)) {
+      return shallowProperty(path);
+    }
+    return function(obj) {
+      return deepGet(obj, path);
+    };
+  };
+
+  // Generates a function for a given object that returns a given property.
+  _.propertyOf = function(obj) {
+    if (obj == null) {
+      return function(){};
+    }
+    return function(path) {
+      return !_.isArray(path) ? obj[path] : deepGet(obj, path);
+    };
+  };
+
+  // Returns a predicate for checking whether an object has a given set of
+  // `key:value` pairs.
+  _.matcher = _.matches = function(attrs) {
+    attrs = _.extendOwn({}, attrs);
+    return function(obj) {
+      return _.isMatch(obj, attrs);
+    };
+  };
+
+  // Run a function **n** times.
+  _.times = function(n, iteratee, context) {
+    var accum = Array(Math.max(0, n));
+    iteratee = optimizeCb(iteratee, context, 1);
+    for (var i = 0; i < n; i++) accum[i] = iteratee(i);
+    return accum;
+  };
+
+  // Return a random integer between min and max (inclusive).
+  _.random = function(min, max) {
+    if (max == null) {
+      max = min;
+      min = 0;
+    }
+    return min + Math.floor(Math.random() * (max - min + 1));
+  };
+
+  // A (possibly faster) way to get the current timestamp as an integer.
+  _.now = Date.now || function() {
+    return new Date().getTime();
+  };
+
+  // List of HTML entities for escaping.
+  var escapeMap = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;',
+    '`': '&#x60;'
+  };
+  var unescapeMap = _.invert(escapeMap);
+
+  // Functions for escaping and unescaping strings to/from HTML interpolation.
+  var createEscaper = function(map) {
+    var escaper = function(match) {
+      return map[match];
+    };
+    // Regexes for identifying a key that needs to be escaped.
+    var source = '(?:' + _.keys(map).join('|') + ')';
+    var testRegexp = RegExp(source);
+    var replaceRegexp = RegExp(source, 'g');
+    return function(string) {
+      string = string == null ? '' : '' + string;
+      return testRegexp.test(string) ? string.replace(replaceRegexp, escaper) : string;
+    };
+  };
+  _.escape = createEscaper(escapeMap);
+  _.unescape = createEscaper(unescapeMap);
+
+  // Traverses the children of `obj` along `path`. If a child is a function, it
+  // is invoked with its parent as context. Returns the value of the final
+  // child, or `fallback` if any child is undefined.
+  _.result = function(obj, path, fallback) {
+    if (!_.isArray(path)) path = [path];
+    var length = path.length;
+    if (!length) {
+      return _.isFunction(fallback) ? fallback.call(obj) : fallback;
+    }
+    for (var i = 0; i < length; i++) {
+      var prop = obj == null ? void 0 : obj[path[i]];
+      if (prop === void 0) {
+        prop = fallback;
+        i = length; // Ensure we don't continue iterating.
+      }
+      obj = _.isFunction(prop) ? prop.call(obj) : prop;
+    }
+    return obj;
+  };
+
+  // Generate a unique integer id (unique within the entire client session).
+  // Useful for temporary DOM ids.
+  var idCounter = 0;
+  _.uniqueId = function(prefix) {
+    var id = ++idCounter + '';
+    return prefix ? prefix + id : id;
+  };
+
+  // By default, Underscore uses ERB-style template delimiters, change the
+  // following template settings to use alternative delimiters.
+  _.templateSettings = {
+    evaluate: /<%([\s\S]+?)%>/g,
+    interpolate: /<%=([\s\S]+?)%>/g,
+    escape: /<%-([\s\S]+?)%>/g
+  };
+
+  // When customizing `templateSettings`, if you don't want to define an
+  // interpolation, evaluation or escaping regex, we need one that is
+  // guaranteed not to match.
+  var noMatch = /(.)^/;
+
+  // Certain characters need to be escaped so that they can be put into a
+  // string literal.
+  var escapes = {
+    "'": "'",
+    '\\': '\\',
+    '\r': 'r',
+    '\n': 'n',
+    '\u2028': 'u2028',
+    '\u2029': 'u2029'
+  };
+
+  var escapeRegExp = /\\|'|\r|\n|\u2028|\u2029/g;
+
+  var escapeChar = function(match) {
+    return '\\' + escapes[match];
+  };
+
+  // JavaScript micro-templating, similar to John Resig's implementation.
+  // Underscore templating handles arbitrary delimiters, preserves whitespace,
+  // and correctly escapes quotes within interpolated code.
+  // NB: `oldSettings` only exists for backwards compatibility.
+  _.template = function(text, settings, oldSettings) {
+    if (!settings && oldSettings) settings = oldSettings;
+    settings = _.defaults({}, settings, _.templateSettings);
+
+    // Combine delimiters into one regular expression via alternation.
+    var matcher = RegExp([
+      (settings.escape || noMatch).source,
+      (settings.interpolate || noMatch).source,
+      (settings.evaluate || noMatch).source
+    ].join('|') + '|$', 'g');
+
+    // Compile the template source, escaping string literals appropriately.
+    var index = 0;
+    var source = "__p+='";
+    text.replace(matcher, function(match, escape, interpolate, evaluate, offset) {
+      source += text.slice(index, offset).replace(escapeRegExp, escapeChar);
+      index = offset + match.length;
+
+      if (escape) {
+        source += "'+\n((__t=(" + escape + "))==null?'':_.escape(__t))+\n'";
+      } else if (interpolate) {
+        source += "'+\n((__t=(" + interpolate + "))==null?'':__t)+\n'";
+      } else if (evaluate) {
+        source += "';\n" + evaluate + "\n__p+='";
+      }
+
+      // Adobe VMs need the match returned to produce the correct offset.
+      return match;
+    });
+    source += "';\n";
+
+    // If a variable is not specified, place data values in local scope.
+    if (!settings.variable) source = 'with(obj||{}){\n' + source + '}\n';
+
+    source = "var __t,__p='',__j=Array.prototype.join," +
+      "print=function(){__p+=__j.call(arguments,'');};\n" +
+      source + 'return __p;\n';
+
+    var render;
+    try {
+      render = new Function(settings.variable || 'obj', '_', source);
+    } catch (e) {
+      e.source = source;
+      throw e;
+    }
+
+    var template = function(data) {
+      return render.call(this, data, _);
+    };
+
+    // Provide the compiled source as a convenience for precompilation.
+    var argument = settings.variable || 'obj';
+    template.source = 'function(' + argument + '){\n' + source + '}';
+
+    return template;
+  };
+
+  // Add a "chain" function. Start chaining a wrapped Underscore object.
+  _.chain = function(obj) {
+    var instance = _(obj);
+    instance._chain = true;
+    return instance;
+  };
+
+  // OOP
+  // ---------------
+  // If Underscore is called as a function, it returns a wrapped object that
+  // can be used OO-style. This wrapper holds altered versions of all the
+  // underscore functions. Wrapped objects may be chained.
+
+  // Helper function to continue chaining intermediate results.
+  var chainResult = function(instance, obj) {
+    return instance._chain ? _(obj).chain() : obj;
+  };
+
+  // Add your own custom functions to the Underscore object.
+  _.mixin = function(obj) {
+    _.each(_.functions(obj), function(name) {
+      var func = _[name] = obj[name];
+      _.prototype[name] = function() {
+        var args = [this._wrapped];
+        push.apply(args, arguments);
+        return chainResult(this, func.apply(_, args));
+      };
+    });
+    return _;
+  };
+
+  // Add all of the Underscore functions to the wrapper object.
+  _.mixin(_);
+
+  // Add all mutator Array functions to the wrapper.
+  _.each(['pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'], function(name) {
+    var method = ArrayProto[name];
+    _.prototype[name] = function() {
+      var obj = this._wrapped;
+      method.apply(obj, arguments);
+      if ((name === 'shift' || name === 'splice') && obj.length === 0) delete obj[0];
+      return chainResult(this, obj);
+    };
+  });
+
+  // Add all accessor Array functions to the wrapper.
+  _.each(['concat', 'join', 'slice'], function(name) {
+    var method = ArrayProto[name];
+    _.prototype[name] = function() {
+      return chainResult(this, method.apply(this._wrapped, arguments));
+    };
+  });
+
+  // Extracts the result from a wrapped and chained object.
+  _.prototype.value = function() {
+    return this._wrapped;
+  };
+
+  // Provide unwrapping proxy for some methods used in engine operations
+  // such as arithmetic and JSON stringification.
+  _.prototype.valueOf = _.prototype.toJSON = _.prototype.value;
+
+  _.prototype.toString = function() {
+    return String(this._wrapped);
+  };
+
+  // AMD registration happens at the end for compatibility with AMD loaders
+  // that may not enforce next-turn semantics on modules. Even though general
+  // practice for AMD registration is to be anonymous, underscore registers
+  // as a named module because, like jQuery, it is a base library that is
+  // popular enough to be bundled in a third party lib, but not be part of
+  // an AMD load request. Those cases could generate an error when an
+  // anonymous define() is called outside of a loader request.
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = (function() {
+      return _;
+    }).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  }
+}());
+
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(module)))
+
+/***/ }),
+
+/***/ "./node_modules/webpack/buildin/module.js":
+/*!***********************************!*\
+  !*** (webpack)/buildin/module.js ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = function(module) {
+	if (!module.webpackPolyfill) {
+		module.deprecate = function() {};
+		module.paths = [];
+		// module.parent = undefined by default
+		if (!module.children) module.children = [];
+		Object.defineProperty(module, "loaded", {
+			enumerable: true,
+			get: function() {
+				return module.l;
+			}
+		});
+		Object.defineProperty(module, "id", {
+			enumerable: true,
+			get: function() {
+				return module.i;
+			}
+		});
+		module.webpackPolyfill = 1;
+	}
+	return module;
+};
+
 
 /***/ }),
 
@@ -437,7 +8147,142 @@ eval("/* WEBPACK VAR INJECTION */(function(module) {var __WEBPACK_AMD_DEFINE_ARR
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("module.exports = which\nwhich.sync = whichSync\n\nvar isWindows = process.platform === 'win32' ||\n    process.env.OSTYPE === 'cygwin' ||\n    process.env.OSTYPE === 'msys'\n\nvar path = __webpack_require__(/*! path */ \"path\")\nvar COLON = isWindows ? ';' : ':'\nvar isexe = __webpack_require__(/*! isexe */ \"./node_modules/isexe/index.js\")\n\nfunction getNotFoundError (cmd) {\n  var er = new Error('not found: ' + cmd)\n  er.code = 'ENOENT'\n\n  return er\n}\n\nfunction getPathInfo (cmd, opt) {\n  var colon = opt.colon || COLON\n  var pathEnv = opt.path || process.env.PATH || ''\n  var pathExt = ['']\n\n  pathEnv = pathEnv.split(colon)\n\n  var pathExtExe = ''\n  if (isWindows) {\n    pathEnv.unshift(process.cwd())\n    pathExtExe = (opt.pathExt || process.env.PATHEXT || '.EXE;.CMD;.BAT;.COM')\n    pathExt = pathExtExe.split(colon)\n\n\n    // Always test the cmd itself first.  isexe will check to make sure\n    // it's found in the pathExt set.\n    if (cmd.indexOf('.') !== -1 && pathExt[0] !== '')\n      pathExt.unshift('')\n  }\n\n  // If it has a slash, then we don't bother searching the pathenv.\n  // just check the file itself, and that's it.\n  if (cmd.match(/\\//) || isWindows && cmd.match(/\\\\/))\n    pathEnv = ['']\n\n  return {\n    env: pathEnv,\n    ext: pathExt,\n    extExe: pathExtExe\n  }\n}\n\nfunction which (cmd, opt, cb) {\n  if (typeof opt === 'function') {\n    cb = opt\n    opt = {}\n  }\n\n  var info = getPathInfo(cmd, opt)\n  var pathEnv = info.env\n  var pathExt = info.ext\n  var pathExtExe = info.extExe\n  var found = []\n\n  ;(function F (i, l) {\n    if (i === l) {\n      if (opt.all && found.length)\n        return cb(null, found)\n      else\n        return cb(getNotFoundError(cmd))\n    }\n\n    var pathPart = pathEnv[i]\n    if (pathPart.charAt(0) === '\"' && pathPart.slice(-1) === '\"')\n      pathPart = pathPart.slice(1, -1)\n\n    var p = path.join(pathPart, cmd)\n    if (!pathPart && (/^\\.[\\\\\\/]/).test(cmd)) {\n      p = cmd.slice(0, 2) + p\n    }\n    ;(function E (ii, ll) {\n      if (ii === ll) return F(i + 1, l)\n      var ext = pathExt[ii]\n      isexe(p + ext, { pathExt: pathExtExe }, function (er, is) {\n        if (!er && is) {\n          if (opt.all)\n            found.push(p + ext)\n          else\n            return cb(null, p + ext)\n        }\n        return E(ii + 1, ll)\n      })\n    })(0, pathExt.length)\n  })(0, pathEnv.length)\n}\n\nfunction whichSync (cmd, opt) {\n  opt = opt || {}\n\n  var info = getPathInfo(cmd, opt)\n  var pathEnv = info.env\n  var pathExt = info.ext\n  var pathExtExe = info.extExe\n  var found = []\n\n  for (var i = 0, l = pathEnv.length; i < l; i ++) {\n    var pathPart = pathEnv[i]\n    if (pathPart.charAt(0) === '\"' && pathPart.slice(-1) === '\"')\n      pathPart = pathPart.slice(1, -1)\n\n    var p = path.join(pathPart, cmd)\n    if (!pathPart && /^\\.[\\\\\\/]/.test(cmd)) {\n      p = cmd.slice(0, 2) + p\n    }\n    for (var j = 0, ll = pathExt.length; j < ll; j ++) {\n      var cur = p + pathExt[j]\n      var is\n      try {\n        is = isexe.sync(cur, { pathExt: pathExtExe })\n        if (is) {\n          if (opt.all)\n            found.push(cur)\n          else\n            return cur\n        }\n      } catch (ex) {}\n    }\n  }\n\n  if (opt.all && found.length)\n    return found\n\n  if (opt.nothrow)\n    return null\n\n  throw getNotFoundError(cmd)\n}\n\n\n//# sourceURL=webpack:///./node_modules/which/which.js?");
+module.exports = which
+which.sync = whichSync
+
+var isWindows = process.platform === 'win32' ||
+    process.env.OSTYPE === 'cygwin' ||
+    process.env.OSTYPE === 'msys'
+
+var path = __webpack_require__(/*! path */ "path")
+var COLON = isWindows ? ';' : ':'
+var isexe = __webpack_require__(/*! isexe */ "./node_modules/isexe/index.js")
+
+function getNotFoundError (cmd) {
+  var er = new Error('not found: ' + cmd)
+  er.code = 'ENOENT'
+
+  return er
+}
+
+function getPathInfo (cmd, opt) {
+  var colon = opt.colon || COLON
+  var pathEnv = opt.path || process.env.PATH || ''
+  var pathExt = ['']
+
+  pathEnv = pathEnv.split(colon)
+
+  var pathExtExe = ''
+  if (isWindows) {
+    pathEnv.unshift(process.cwd())
+    pathExtExe = (opt.pathExt || process.env.PATHEXT || '.EXE;.CMD;.BAT;.COM')
+    pathExt = pathExtExe.split(colon)
+
+
+    // Always test the cmd itself first.  isexe will check to make sure
+    // it's found in the pathExt set.
+    if (cmd.indexOf('.') !== -1 && pathExt[0] !== '')
+      pathExt.unshift('')
+  }
+
+  // If it has a slash, then we don't bother searching the pathenv.
+  // just check the file itself, and that's it.
+  if (cmd.match(/\//) || isWindows && cmd.match(/\\/))
+    pathEnv = ['']
+
+  return {
+    env: pathEnv,
+    ext: pathExt,
+    extExe: pathExtExe
+  }
+}
+
+function which (cmd, opt, cb) {
+  if (typeof opt === 'function') {
+    cb = opt
+    opt = {}
+  }
+
+  var info = getPathInfo(cmd, opt)
+  var pathEnv = info.env
+  var pathExt = info.ext
+  var pathExtExe = info.extExe
+  var found = []
+
+  ;(function F (i, l) {
+    if (i === l) {
+      if (opt.all && found.length)
+        return cb(null, found)
+      else
+        return cb(getNotFoundError(cmd))
+    }
+
+    var pathPart = pathEnv[i]
+    if (pathPart.charAt(0) === '"' && pathPart.slice(-1) === '"')
+      pathPart = pathPart.slice(1, -1)
+
+    var p = path.join(pathPart, cmd)
+    if (!pathPart && (/^\.[\\\/]/).test(cmd)) {
+      p = cmd.slice(0, 2) + p
+    }
+    ;(function E (ii, ll) {
+      if (ii === ll) return F(i + 1, l)
+      var ext = pathExt[ii]
+      isexe(p + ext, { pathExt: pathExtExe }, function (er, is) {
+        if (!er && is) {
+          if (opt.all)
+            found.push(p + ext)
+          else
+            return cb(null, p + ext)
+        }
+        return E(ii + 1, ll)
+      })
+    })(0, pathExt.length)
+  })(0, pathEnv.length)
+}
+
+function whichSync (cmd, opt) {
+  opt = opt || {}
+
+  var info = getPathInfo(cmd, opt)
+  var pathEnv = info.env
+  var pathExt = info.ext
+  var pathExtExe = info.extExe
+  var found = []
+
+  for (var i = 0, l = pathEnv.length; i < l; i ++) {
+    var pathPart = pathEnv[i]
+    if (pathPart.charAt(0) === '"' && pathPart.slice(-1) === '"')
+      pathPart = pathPart.slice(1, -1)
+
+    var p = path.join(pathPart, cmd)
+    if (!pathPart && /^\.[\\\/]/.test(cmd)) {
+      p = cmd.slice(0, 2) + p
+    }
+    for (var j = 0, ll = pathExt.length; j < ll; j ++) {
+      var cur = p + pathExt[j]
+      var is
+      try {
+        is = isexe.sync(cur, { pathExt: pathExtExe })
+        if (is) {
+          if (opt.all)
+            found.push(cur)
+          else
+            return cur
+        }
+      } catch (ex) {}
+    }
+  }
+
+  if (opt.all && found.length)
+    return found
+
+  if (opt.nothrow)
+    return null
+
+  throw getNotFoundError(cmd)
+}
+
 
 /***/ }),
 
@@ -449,7 +8294,10 @@ eval("module.exports = which\nwhich.sync = whichSync\n\nvar isWindows = process.
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _module_internetStateChangeNotifier__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./module/internetStateChangeNotifier */ \"./src/module/internetStateChangeNotifier.js\");\n\nnew _module_internetStateChangeNotifier__WEBPACK_IMPORTED_MODULE_0__[\"default\"]().run();\n\n//# sourceURL=webpack:///./src/index.js?");
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _module_internetStateChangeNotifier__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./module/internetStateChangeNotifier */ "./src/module/internetStateChangeNotifier.js");
+
+new _module_internetStateChangeNotifier__WEBPACK_IMPORTED_MODULE_0__["default"]().run();
 
 /***/ }),
 
@@ -461,7 +8309,114 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _mod
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var ping__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ping */ \"./node_modules/ping/index.js\");\n/* harmony import */ var ping__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(ping__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var _config_config__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./../../config/config */ \"./config/config.js\");\n/* harmony import */ var node_notifier__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! node-notifier */ \"./node_modules/node-notifier/index.js\");\n/* harmony import */ var node_notifier__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(node_notifier__WEBPACK_IMPORTED_MODULE_2__);\n/* harmony import */ var events__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! events */ \"events\");\n/* harmony import */ var events__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(events__WEBPACK_IMPORTED_MODULE_3__);\n\n\n\n\nclass InternetStateChangeNotifier {\n\n    constructor(_config, emitter, handler){\n        this.pastData = {\n            alive: false\n        };\n        this.config = _config || _config_config__WEBPACK_IMPORTED_MODULE_1__[\"default\"];\n        /** @type {EventEmitter} */\n        this.emitter = emitter || new events__WEBPACK_IMPORTED_MODULE_3__[\"EventEmitter\"]();\n        this.handler = handler || this.onInternetStateChanged;\n    }\n    run(){\n        this.emitter.on('internet_state_changed', (data)=> {\n            this.handler(data);\n        });\n        this.config.hosts.forEach((host)=>{\n            setInterval(()=> {\n                ping__WEBPACK_IMPORTED_MODULE_0___default.a.promise.probe(host)\n                .then((result)=>{\n                    if(this.isStateChanged(result)){\n                        this.emitInternetStateChanged(result)\n                    }\n                });\n            }, _config_config__WEBPACK_IMPORTED_MODULE_1__[\"default\"].interval);\n        });\n    }\n    isStateChanged(data){\n        return (this.pastData.alive !== data.alive);\n    }\n    emitInternetStateChanged(data){\n        this.emitter.emit('internet_state_changed', data);\n    }\n\n    onInternetStateChanged(data){\n        var info = !data.alive ? 'Internet Down lol! lul! lolz!' : 'Internet Up. Time to work :\\'(';\n        try{\n            node_notifier__WEBPACK_IMPORTED_MODULE_2___default.a.notify({\n                title: 'Internet Status',\n                message: info\n              });\n        }catch(err){\n            console.log(err);\n        }\n        this.pastData.alive = data.alive;\n    }\n}\n\n/* harmony default export */ __webpack_exports__[\"default\"] = (InternetStateChangeNotifier);\n\n//# sourceURL=webpack:///./src/module/internetStateChangeNotifier.js?");
+__webpack_require__.r(__webpack_exports__);
+/* WEBPACK VAR INJECTION */(function(__dirname) {/* harmony import */ var ping__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ping */ "./node_modules/ping/index.js");
+/* harmony import */ var ping__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(ping__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _config_config__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./../../config/config */ "./config/config.js");
+/* harmony import */ var node_notifier__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! node-notifier */ "./node_modules/node-notifier/index.js");
+/* harmony import */ var node_notifier__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(node_notifier__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var events__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! events */ "events");
+/* harmony import */ var events__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(events__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var path__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! path */ "path");
+/* harmony import */ var path__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(path__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var dns__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! dns */ "dns");
+/* harmony import */ var dns__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(dns__WEBPACK_IMPORTED_MODULE_5__);
+
+
+
+
+
+
+class InternetStateChangeNotifier {
+
+    constructor(_config, emitter, handler){
+        this.pastData = {
+            alive: undefined
+        };
+        this.config = _config || _config_config__WEBPACK_IMPORTED_MODULE_1__["default"];
+        /** @type {EventEmitter} */
+        this.emitter = emitter || new events__WEBPACK_IMPORTED_MODULE_3__["EventEmitter"]();
+        this.handler = handler || this.onInternetStateChanged;
+        this.stateCache = {
+            counter:0
+        }
+    }
+    run(){
+        this.emitter.on('internet_state_changed', (data)=> {
+            this.handler(data);
+        });
+        setInterval(()=> {
+            this.checkInternet(_config_config__WEBPACK_IMPORTED_MODULE_1__["default"].check_method, _config_config__WEBPACK_IMPORTED_MODULE_1__["default"].host)
+            .then((result)=>{
+                if(this.isStateChanged(result)){
+                    this.emitInternetStateChanged(result)
+                }
+            })
+            .catch((err)=>{
+                console.error(err)
+            });
+        }, _config_config__WEBPACK_IMPORTED_MODULE_1__["default"].interval);
+    }
+    checkInternet(type, host){
+        switch(type){
+            case 'PING': return this.checkInternetWithPing(host);
+            case 'DNS' : return this.checkInternetWithDNS(host);
+        }
+    }
+    checkInternetWithDNS(host){
+        return new Promise((res, rej)=>{
+            try{
+                dns__WEBPACK_IMPORTED_MODULE_5___default.a.lookup(host, (err)=>{
+                    if (err && err.code === "ENOTFOUND") {
+                        res({ alive: false })
+                    } else {
+                        res({ alive: true });
+                    }
+                })
+            }catch(err){
+                rej(err);
+            }
+        });
+    }
+    checkInternetWithPing(host){
+        return ping__WEBPACK_IMPORTED_MODULE_0___default.a.promise.probe(host);
+    }
+    isStateChanged(data){
+        if(this.pastData.alive !== data.alive){
+            this.stateCache.counter++;
+        }else{
+            this.stateCache.counter= 0;
+        }
+        if(this.stateCache.counter === this.config.debounce_time){
+            this.pastData.alive = data.alive;
+            this.stateCache.counter = 0;
+            return true;
+        }
+        return false;
+    }
+    emitInternetStateChanged(data){
+        this.emitter.emit('internet_state_changed', data);
+    }
+
+    onInternetStateChanged(data){
+        const info = data.alive ? 'Internet Up. Time to work :\'(' : 'Internet Down lol! lul! lolz!';
+        let icon = Object(path__WEBPACK_IMPORTED_MODULE_4__["resolve"])(__dirname,'../../assets/img');
+        icon = data.alive? Object(path__WEBPACK_IMPORTED_MODULE_4__["resolve"])(icon, 'error-flat.png'): Object(path__WEBPACK_IMPORTED_MODULE_4__["resolve"])(icon, 'icons8-ok-256.png')
+        try{
+            node_notifier__WEBPACK_IMPORTED_MODULE_2___default.a.notify({
+                title: 'Internet Status',
+                message: info,
+                icon
+              });
+        }catch(err){
+            console.log(err);
+        }
+        this.pastData.alive = data.alive;
+    }
+}
+
+/* harmony default export */ __webpack_exports__["default"] = (InternetStateChangeNotifier);
+/* WEBPACK VAR INJECTION */}.call(this, "src/module"))
 
 /***/ }),
 
@@ -472,7 +8427,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var ping
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-eval("module.exports = require(\"child_process\");\n\n//# sourceURL=webpack:///external_%22child_process%22?");
+module.exports = require("child_process");
 
 /***/ }),
 
@@ -483,7 +8438,18 @@ eval("module.exports = require(\"child_process\");\n\n//# sourceURL=webpack:///e
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-eval("module.exports = require(\"crypto\");\n\n//# sourceURL=webpack:///external_%22crypto%22?");
+module.exports = require("crypto");
+
+/***/ }),
+
+/***/ "dns":
+/*!**********************!*\
+  !*** external "dns" ***!
+  \**********************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("dns");
 
 /***/ }),
 
@@ -494,7 +8460,7 @@ eval("module.exports = require(\"crypto\");\n\n//# sourceURL=webpack:///external
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-eval("module.exports = require(\"events\");\n\n//# sourceURL=webpack:///external_%22events%22?");
+module.exports = require("events");
 
 /***/ }),
 
@@ -505,7 +8471,7 @@ eval("module.exports = require(\"events\");\n\n//# sourceURL=webpack:///external
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-eval("module.exports = require(\"fs\");\n\n//# sourceURL=webpack:///external_%22fs%22?");
+module.exports = require("fs");
 
 /***/ }),
 
@@ -516,7 +8482,7 @@ eval("module.exports = require(\"fs\");\n\n//# sourceURL=webpack:///external_%22
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-eval("module.exports = require(\"net\");\n\n//# sourceURL=webpack:///external_%22net%22?");
+module.exports = require("net");
 
 /***/ }),
 
@@ -527,7 +8493,7 @@ eval("module.exports = require(\"net\");\n\n//# sourceURL=webpack:///external_%2
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-eval("module.exports = require(\"os\");\n\n//# sourceURL=webpack:///external_%22os%22?");
+module.exports = require("os");
 
 /***/ }),
 
@@ -538,7 +8504,7 @@ eval("module.exports = require(\"os\");\n\n//# sourceURL=webpack:///external_%22
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-eval("module.exports = require(\"path\");\n\n//# sourceURL=webpack:///external_%22path%22?");
+module.exports = require("path");
 
 /***/ }),
 
@@ -549,7 +8515,7 @@ eval("module.exports = require(\"path\");\n\n//# sourceURL=webpack:///external_%
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-eval("module.exports = require(\"url\");\n\n//# sourceURL=webpack:///external_%22url%22?");
+module.exports = require("url");
 
 /***/ }),
 
@@ -560,8 +8526,9 @@ eval("module.exports = require(\"url\");\n\n//# sourceURL=webpack:///external_%2
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-eval("module.exports = require(\"util\");\n\n//# sourceURL=webpack:///external_%22util%22?");
+module.exports = require("util");
 
 /***/ })
 
 /******/ });
+//# sourceMappingURL=build.js.map

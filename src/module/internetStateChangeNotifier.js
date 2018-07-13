@@ -2,45 +2,88 @@ import ping from "ping";
 import config from './../../config/config';
 import notifier from "node-notifier";
 import { EventEmitter } from 'events'
+import {resolve} from 'path'
+import dns from 'dns';
 class InternetStateChangeNotifier {
 
     constructor(_config, emitter, handler){
         this.pastData = {
-            alive: false
+            alive: undefined
         };
         this.config = _config || config;
         /** @type {EventEmitter} */
         this.emitter = emitter || new EventEmitter();
         this.handler = handler || this.onInternetStateChanged;
+        this.stateCache = {
+            counter:0
+        }
     }
     run(){
         this.emitter.on('internet_state_changed', (data)=> {
             this.handler(data);
         });
-        this.config.hosts.forEach((host)=>{
-            setInterval(()=> {
-                ping.promise.probe(host)
-                .then((result)=>{
-                    if(this.isStateChanged(result)){
-                        this.emitInternetStateChanged(result)
+        setInterval(()=> {
+            this.checkInternet(config.check_method, config.host)
+            .then((result)=>{
+                if(this.isStateChanged(result)){
+                    this.emitInternetStateChanged(result)
+                }
+            })
+            .catch((err)=>{
+                console.error(err)
+            });
+        }, config.interval);
+    }
+    checkInternet(type, host){
+        switch(type){
+            case 'PING': return this.checkInternetWithPing(host);
+            case 'DNS' : return this.checkInternetWithDNS(host);
+        }
+    }
+    checkInternetWithDNS(host){
+        return new Promise((res, rej)=>{
+            try{
+                dns.lookup(host, (err)=>{
+                    if (err && err.code === "ENOTFOUND") {
+                        res({ alive: false })
+                    } else {
+                        res({ alive: true });
                     }
-                });
-            }, config.interval);
+                })
+            }catch(err){
+                rej(err);
+            }
         });
     }
+    checkInternetWithPing(host){
+        return ping.promise.probe(host);
+    }
     isStateChanged(data){
-        return (this.pastData.alive !== data.alive);
+        if(this.pastData.alive !== data.alive){
+            this.stateCache.counter++;
+        }else{
+            this.stateCache.counter= 0;
+        }
+        if(this.stateCache.counter === this.config.debounce_time){
+            this.pastData.alive = data.alive;
+            this.stateCache.counter = 0;
+            return true;
+        }
+        return false;
     }
     emitInternetStateChanged(data){
         this.emitter.emit('internet_state_changed', data);
     }
 
     onInternetStateChanged(data){
-        var info = !data.alive ? 'Internet Down lol! lul! lolz!' : 'Internet Up. Time to work :\'(';
+        const info = data.alive ? 'Internet Up. Time to work :\'(' : 'Internet Down lol! lul! lolz!';
+        let icon = resolve(__dirname,'../../assets/img');
+        icon = data.alive? resolve(icon, 'error-flat.png'): resolve(icon, 'icons8-ok-256.png')
         try{
             notifier.notify({
                 title: 'Internet Status',
-                message: info
+                message: info,
+                icon
               });
         }catch(err){
             console.log(err);

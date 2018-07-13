@@ -12,6 +12,7 @@ const config = {
         __dirname: true
     },
     mode: "development",
-    target: "node"
+    target: "node",
+    devtool:"source-map"
 }
 module.exports = config;
