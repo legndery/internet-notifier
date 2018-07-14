@@ -14,7 +14,7 @@ class InternetStateChangeNotifier {
      * 
      * @param { {host, interval, debounce_time, check_method} } _config 
      * @param { EventEmitter } emitter
-     * @param { function || boolean } handler
+     * @param { (function|boolean) } handler
      */
     constructor(_config, emitter, handler){
         this.pastData = {
