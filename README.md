@@ -32,9 +32,7 @@ The package can be used as a standalone app or can be included in your app using
     ```
 # Reference
 ### `Class: InternetStateChangeNotifier`
-```
-which checks with ping or dns if a remote host is reachable or not and emits an event called 'internet_state_changed' with `{ alive: boolean }`
-```
+which checks with ping or dns if a remote host is reachable or not and emits an event called 'internet_state_changed' with `{ alive: boolean }`  
 
 ### `new InternetStateChangeNotifier(handler, emitter, _config)`
 Create the notifier class intstance with params
@@ -49,24 +47,10 @@ Create the notifier class intstance with params
 |_config.debounce_time|  <code>Number</code> | Default: `4`, How many consecutive same status requests are returned before internet state change is determined, i.e if atleast 4 consecutive dead or alive responses gets returned then we determine internet is down or up|
 |_config.check_method| <code>String</code> | Default: `"PING"`, Possible Value: `"DNS"`, Determines if it will Ping or Lookup the Host |
 
-<a name="InternetStateChangeNotifier+emitter"></a>
+### Methods
+### `run(): void`
+    runs the notification service
+### `getEmitter(): EventEmitter`
+    returns the EventEmitter instance
 
-### internetStateChangeNotifier.emitter : <code>EventEmitter</code>
-**Kind**: instance property of [<code>InternetStateChangeNotifier</code>](#InternetStateChangeNotifier)  
-<a name="InternetStateChangeNotifier+run"></a>
-
-### internetStateChangeNotifier.run()
-run the notification service
-
-**Kind**: instance method of [<code>InternetStateChangeNotifier</code>](#InternetStateChangeNotifier)  
-<a name="InternetStateChangeNotifier+onInternetStateChanged"></a>
-
-### internetStateChangeNotifier.onInternetStateChanged(data)
-The default handler provided. Which creates a toast notification
-
-**Kind**: instance method of [<code>InternetStateChangeNotifier</code>](#InternetStateChangeNotifier)  
-
-| Param | Type |
-| --- | --- |
-| data | <code>Object</code> | 
 

@@ -33,6 +33,9 @@ class InternetStateChangeNotifier {
             counter:0
         }
     }
+    getEmitter(){
+        return this.emitter;
+    }
     /**
      * run the notification service
      */
