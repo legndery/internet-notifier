@@ -8330,7 +8330,7 @@ class InternetStateChangeNotifier {
      * @param { EventEmitter } emitter
      * @param { (function|boolean) } handler
      */
-    constructor(_config, emitter, handler){
+    constructor(handler, emitter, _config){
         this.pastData = {
             alive: undefined
         };
