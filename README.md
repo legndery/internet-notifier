@@ -4,21 +4,31 @@ It will Create a toast notification to notify if Internet is Down or not based o
 # Getting Started
 The package can be used as a standalone app or can be included in your app using `require` or `import`  
 ## Run Standalone
-1. Clone the Repository
-    ```bash
-    $ git clone git@github.com:legndery/internet-notifier.git
-    ```
-2. NPM install dependencies
-    ```bash
-    $ cd internet-notifier
-    $ npm i
-    ```
-3. Run it
-    ```bash
-    $ npm start
-    # optionally you can make it a background process by 
-    # $ npm start &
-    ```
+* ### Using Git CLone
+    1. Clone the Repository
+        ```bash
+        $ git clone git@github.com:legndery/internet-notifier.git
+        ```
+    2. NPM install dependencies
+        ```bash
+        $ cd internet-notifier
+        $ npm i
+        ```
+    3. Run it
+        ```bash
+        $ npm start
+        # optionally you can make it a background process by 
+        # $ npm start &
+        ```
+* ### Using NPM global package
+    1. NPM install from Git
+        ```bash
+        $ npm i -g legndery/internet-notifier.git
+        ```
+    2. Run the package
+        ```bash
+        $ inotifier # or internet-notifier
+        ```
 ## Include in your module
 1. NPM install it as a module
     ```bash
