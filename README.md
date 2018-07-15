@@ -42,10 +42,10 @@ The package can be used as a standalone app or can be included in your app using
     ```
 # Reference
 ### `Class: InternetStateChangeNotifier`
-which checks with ping or dns if a remote host is reachable or not and emits an event called 'internet_state_changed' with `{ alive: boolean }`  
+which checks with ping or dns if a remote host is reachable or not and emits an event called `internet_state_changed` with data `{ alive: boolean }`  
 
-### `new InternetStateChangeNotifier(handler, emitter, _config)`
-Create the notifier class intstance with params
+### `new InternetStateChangeNotifier([handler, [emitter, [_config]]])`
+Create the notifier class instance with params. **Every Param is optional**
 
 | Param | Type | Description |
 | --- | --- |---|
