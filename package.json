@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node build/js/build.js",
-    "build": "webpack && chmod +x ./build/vendor"
+    "build": "webpack && chmod -R +x ./build/vendor/"
   },
   "bin": {
     "internet-notifier": "./bin/cli.js",

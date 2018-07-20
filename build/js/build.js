@@ -702,8 +702,6 @@ function sync (path, options) {
 
 var os = __webpack_require__(/*! os */ "os");
 var utils = __webpack_require__(/*! ./lib/utils */ "./node_modules/node-notifier/lib/utils.js");
-console.log(__dirname);
-console.log();
 // All notifiers
 var NotifySend = __webpack_require__(/*! ./notifiers/notifysend */ "./node_modules/node-notifier/notifiers/notifysend.js");
 var NotificationCenter = __webpack_require__(/*! ./notifiers/notificationcenter */ "./node_modules/node-notifier/notifiers/notificationcenter.js");

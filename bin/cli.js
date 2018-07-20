@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-require('./../build/build');
+require('./../build/js/build');
