@@ -2,9 +2,6 @@
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 /******/
-/******/ 	// object to store loaded and loading wasm modules
-/******/ 	var installedWasmModules = {};
-/******/
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
 /******/
@@ -39,17 +36,32 @@
 /******/ 	// define getter function for harmony exports
 /******/ 	__webpack_require__.d = function(exports, name, getter) {
 /******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, {
-/******/ 				configurable: false,
-/******/ 				enumerable: true,
-/******/ 				get: getter
-/******/ 			});
+/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
 /******/ 		}
 /******/ 	};
 /******/
 /******/ 	// define __esModule on exports
 /******/ 	__webpack_require__.r = function(exports) {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 		}
 /******/ 		Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 	};
+/******/
+/******/ 	// create a fake namespace object
+/******/ 	// mode & 1: value is a module id, require it
+/******/ 	// mode & 2: merge all properties of value into the ns
+/******/ 	// mode & 4: return value when already ns object
+/******/ 	// mode & 8|1: behave like require
+/******/ 	__webpack_require__.t = function(value, mode) {
+/******/ 		if(mode & 1) value = __webpack_require__(value);
+/******/ 		if(mode & 8) return value;
+/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
+/******/ 		var ns = Object.create(null);
+/******/ 		__webpack_require__.r(ns);
+/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
+/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
+/******/ 		return ns;
 /******/ 	};
 /******/
 /******/ 	// getDefaultExport function for compatibility with non-harmony modules
@@ -67,48 +79,12 @@
 /******/ 	// __webpack_public_path__
 /******/ 	__webpack_require__.p = "";
 /******/
-/******/ 	// object with all compiled WebAssembly.Modules
-/******/ 	__webpack_require__.w = {};
-/******/
 /******/
 /******/ 	// Load entry module and return exports
 /******/ 	return __webpack_require__(__webpack_require__.s = "./src/index.js");
 /******/ })
 /************************************************************************/
 /******/ ({
-
-/***/ "../../.nvm/versions/node/v9.8.0/lib/node_modules/webpack/buildin/module.js":
-/*!***********************************!*\
-  !*** (webpack)/buildin/module.js ***!
-  \***********************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-module.exports = function(module) {
-	if (!module.webpackPolyfill) {
-		module.deprecate = function() {};
-		module.paths = [];
-		// module.parent = undefined by default
-		if (!module.children) module.children = [];
-		Object.defineProperty(module, "loaded", {
-			enumerable: true,
-			get: function() {
-				return module.l;
-			}
-		});
-		Object.defineProperty(module, "id", {
-			enumerable: true,
-			get: function() {
-				return module.i;
-			}
-		});
-		module.webpackPolyfill = 1;
-	}
-	return module;
-};
-
-
-/***/ }),
 
 /***/ "./config/config.js":
 /*!**************************!*\
@@ -726,7 +702,8 @@ function sync (path, options) {
 
 var os = __webpack_require__(/*! os */ "os");
 var utils = __webpack_require__(/*! ./lib/utils */ "./node_modules/node-notifier/lib/utils.js");
-
+console.log(__dirname);
+console.log();
 // All notifiers
 var NotifySend = __webpack_require__(/*! ./notifiers/notifysend */ "./node_modules/node-notifier/notifiers/notifysend.js");
 var NotificationCenter = __webpack_require__(/*! ./notifiers/notificationcenter */ "./node_modules/node-notifier/notifiers/notificationcenter.js");
@@ -1337,7 +1314,7 @@ function sanitizeNotifuTypeArgument(type) {
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(__dirname) {/**
+/**
  * Wrapper for the notifu 1.6 (http://www.paralint.com/projects/notifu/)
 
 Usage
@@ -1494,7 +1471,6 @@ function fromErrorCodeToAction(errorCode) {
   }
 }
 
-/* WEBPACK VAR INJECTION */}.call(this, "node_modules/node-notifier/notifiers"))
 
 /***/ }),
 
@@ -1592,7 +1568,7 @@ function noop() {}
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(__dirname) {/**
+/**
  * A Node.js wrapper for terminal-notify (with fallback).
  */
 var utils = __webpack_require__(/*! ../lib/utils */ "./node_modules/node-notifier/lib/utils.js");
@@ -1693,7 +1669,6 @@ function identificator() {
   return { _ref: 'val' };
 }
 
-/* WEBPACK VAR INJECTION */}.call(this, "node_modules/node-notifier/notifiers"))
 
 /***/ }),
 
@@ -1809,7 +1784,7 @@ function doNotification(options, callback) {
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(__dirname) {/**
+/**
  * Wrapper for the toaster (https://github.com/nels-o/toaster)
  */
 var path = __webpack_require__(/*! path */ "path");
@@ -1910,7 +1885,6 @@ WindowsToaster.prototype.notify = function(options, callback) {
   return this;
 };
 
-/* WEBPACK VAR INJECTION */}.call(this, "node_modules/node-notifier/notifiers"))
 
 /***/ }),
 
@@ -8127,7 +8101,40 @@ function coerce(version) {
   }
 }());
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../../.nvm/versions/node/v9.8.0/lib/node_modules/webpack/buildin/module.js */ "../../.nvm/versions/node/v9.8.0/lib/node_modules/webpack/buildin/module.js")(module)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(module)))
+
+/***/ }),
+
+/***/ "./node_modules/webpack/buildin/module.js":
+/*!***********************************!*\
+  !*** (webpack)/buildin/module.js ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = function(module) {
+	if (!module.webpackPolyfill) {
+		module.deprecate = function() {};
+		module.paths = [];
+		// module.parent = undefined by default
+		if (!module.children) module.children = [];
+		Object.defineProperty(module, "loaded", {
+			enumerable: true,
+			get: function() {
+				return module.l;
+			}
+		});
+		Object.defineProperty(module, "id", {
+			enumerable: true,
+			get: function() {
+				return module.i;
+			}
+		});
+		module.webpackPolyfill = 1;
+	}
+	return module;
+};
+
 
 /***/ }),
 
@@ -8301,7 +8308,7 @@ new _module_internetStateChangeNotifier__WEBPACK_IMPORTED_MODULE_0__["default"](
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* WEBPACK VAR INJECTION */(function(__dirname) {/* harmony import */ var ping__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ping */ "./node_modules/ping/index.js");
+/* harmony import */ var ping__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ping */ "./node_modules/ping/index.js");
 /* harmony import */ var ping__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(ping__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _config_config__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./../../config/config */ "./config/config.js");
 /* harmony import */ var node_notifier__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! node-notifier */ "./node_modules/node-notifier/index.js");
@@ -8434,7 +8441,6 @@ class InternetStateChangeNotifier {
 }
 
 /* harmony default export */ __webpack_exports__["default"] = (InternetStateChangeNotifier);
-/* WEBPACK VAR INJECTION */}.call(this, "src/module"))
 
 /***/ }),
 
